@@ -25,12 +25,12 @@ Medium - 15%
 Quartile - 25% 
 High - 30% 
 
-![polynomial](image.png)
+![polynomial](Polynomials.png)
 
 
 --8. Apply the mask,  there could be 8 masking patterns, which was indicated in the format strips
  
-![mask](image-1.png)
+![mask](masking_pattern.png)
 
 
 
