@@ -1,2 +1,3 @@
-# SQL_Art
-Repository for different kind of fun ideas implemented in SQL
+#SQL_QR
+
+To create a QR code with SQL - T-SQL
