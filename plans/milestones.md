@@ -1,11 +1,15 @@
 Generating a QR (Quick Response) code. 
 
 Steps and screens from YouTube video 
-**[How do QR codes work? (I built one myself to find out)]** https://www.youtube.com/watch?v=w5ebcowAJD8
+**[How do QR codes work? (I built one myself to find out)](https://www.youtube.com/watch?v=w5ebcowAJD8)**
+
+Reference - **[Creating a QR Code step by step](https://www.nayuki.io/page/creating-a-qr-code-step-by-step)**
 
 1. convert each character to 010101
 
+```sql
 select convert(varchar(4), cast(15 as varbinary(1)), 2)
+```
 
 2. Put four squares on the left upper, right upper and left bottom, and the smaller one on the right bottom to adjust angle
 
