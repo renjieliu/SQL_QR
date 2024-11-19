@@ -93,14 +93,14 @@ update #canvas set cell = left(cell, @pdp - 1) + 'p' + right(cell, @totalpixel -
 update #canvas set cell = left(cell, 2) + REPLICATE('p', 3) + right(cell, @totalpixel - 2-3) where id BETWEEN @totalpixel-@pdp+3 and @totalpixel-@pdp+5
 
 
--- TODO!!! adding separators for PDP 3
+--adding separators for PDP 3
 
 -- upper line of PDP-3
 update #canvas set cell = REPLICATE('s', @pdp+1) + right(cell, @totalpixel - (@pdp+1) ) where id = @totalpixel-@pdp 
 -- right line of PDP-3
-update #canvas set cell = left(cell, @pdp) + 's' + right(cell, @totalpixel - (@pdp+1) ) where id between @totalpixel-1 and @totalpixel-@pdp
+update #canvas set cell = left(cell, @pdp) + 's' + right(cell, @totalpixel - (@pdp+1) ) where id between @totalpixel-@pdp and @totalpixel
 -- boundary of the inner circle of PDP-3 
-update #canvas set cell = replace (left(cell, @pdp), '_', 's') + right(cell, len(cell)-@pdp) where id between @totalpixel-2 and @totalpixel-(@pdp-1) -- only update the left @pdp characters, if it's _ , then it's a separator
+update #canvas set cell = replace(left(cell, @pdp+1), '_', 's') + right(cell, @totalpixel - (@pdp+1)) where id between @totalpixel-(@pdp-1) and @totalpixel-1  -- only update the left @pdp characters, if it's _ , then it's a separator
 
 
 
