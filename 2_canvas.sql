@@ -15,6 +15,8 @@
 -- 'D' for the dark module
 -- 'A' for alignment 
 -- 'a' for inside of alignment
+-- 'r' for reserved areas
+
 
 --  select nchar('9632')
 
@@ -135,11 +137,6 @@ update #canvas set cell = left(cell, 6) + 't' + right (cell, @blocks - 7) where 
 
 -- horizontal, mark Tt
 update #canvas set cell = left(cell, 8) + left(REPLICATE('Tt', @blocks), @blocks - 16 ) + right (cell, 8)   where id = @finder -- just let it repeat, and take the numbers to fill the gap, which is 16 for all the versions
-
-
-
---plot the dark module 
-update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where id = @blocks - 7
 
 
 
@@ -404,8 +401,33 @@ from #flat
 group by (loc-1)/@blocks
 
 
+
+
+-- next is to plot the reserved area
+
+
+
+
+
+
+
+
+
+
+
+
+
+--plot the dark module 
+update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where id = @blocks - 7
+
+
+
 select * from #canvas_staging
 order by 1 
+
+
+
+
 -- select * from #flat
 
 -- select * from #alignments
