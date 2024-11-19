@@ -17,7 +17,7 @@ Reference - **[Creating a QR Code step by step](https://www.nayuki.io/page/creat
 select convert(varchar(4), cast(15 as varbinary(1)), 2)
 ```
 
-* Make a 21*21 canvas, put four squares on the left upper, right upper and left bottom, and the smaller one on the right bottom to adjust angle
+* Make a 21*21 canvas, put four squares on the left upper, right upper and left bottom, and the alignment pattern on the right bottom to adjust angle
 
 * Timing strips. → to tell the phone which version the QR code is 
  
