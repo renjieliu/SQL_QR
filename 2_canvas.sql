@@ -406,7 +406,7 @@ alter table #flat drop column rem
 
 
 
--- next is to plot the reserved area
+-- next is to plot the reserved version information area
 
 -- location starts from 1, to avoid 25 / 25 --> 1, which should be on the same first row
 drop table if exists #canvas_staging 
@@ -421,7 +421,7 @@ from #flat
 
 update #canvas_staging set rn = rn +1, cn = cn + 1 -- row and col starts from 1 
 
----- for version <= 7 
+---- for all the versions <= 7 
 
 -- PDP-1 lower line
 update #canvas_staging 
@@ -430,7 +430,7 @@ where
 rn = 9 
 and cn <= 9 
 and curr = '_'
-and @version_num < 7
+-- and @version_num < 7
 
 
 -- PDP-1 upper right line
@@ -440,7 +440,7 @@ where
 rn <= 9 
 and cn = 9 
 and curr = '_'
-and @version_num < 7
+-- and @version_num < 7
 
 -- PDP-2 lower line
 update #canvas_staging 
@@ -449,7 +449,7 @@ where
 rn = 9 
 and cn >= @blocks - 7
 and curr = '_'
-and @version_num < 7
+-- and @version_num < 7
 
 -- PDP-3 right line
 update #canvas_staging 
@@ -458,10 +458,10 @@ where
 rn >= @blocks - 7 
 and cn = 9
 and curr = '_'
-and @version_num < 7
+-- and @version_num < 7
 
 
----- for version > 7, reserved region
+---- for version >= 7, reserved region
 
 
 
