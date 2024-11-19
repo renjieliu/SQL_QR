@@ -36,7 +36,7 @@ from cte
 option(maxrecursion  0)
 
 
-declare @blocks int = (select n from #versions where v = @version_num) 
+declare @blocks int = (select cast(n as int) from #versions where v = @version_num) 
 declare @finder int = 7
 
 ; with cte as 
@@ -265,22 +265,40 @@ order by 1
 -- get all the blocks where it's being taken by the finder or separator pattern
 
 -- put the matrix into one flat string, and find the location of all the F and s - Finder and separator
-declare @flat nvarchar(max) = (select flat = STRING_AGG(cell,'') within group(order by id ) from #canvas )
- 
+
+-- declare @flat nvarchar(max) = (select flat = STRING_AGG(cell,'') within group(order by id ) from #canvas )
 drop table if exists #finder_separator_covered
+drop table if exists #flat
 
 ; with cte as 
 (
-select curr = @flat, loc = PATINDEX('%[Fs]%', @flat) , rem = right(@flat, len(@flat) - PATINDEX('%[Fs]%', @flat) )
+select loc = 0
+, curr = cast('' as varchar(max))
+, rem = cast( STRING_AGG(cell,'') within group(order by id ) as varchar(max))
+from #canvas 
 union all 
-select rem, loc + PATINDEX('%[Fs]%', rem), right(rem, len(rem) - PATINDEX('%[Fs]%', rem) ) 
+select loc+ 1, left(rem, 1), right(rem, len(rem)-1 )from cte
+where rem != ''
+)
+select * into #flat
 from cte
-where PATINDEX('%[Fs]%', rem) != 0
-) 
-select *
-into #finder_separator_covered
-from cte 
-OPTION(maxrecursion 0)
+OPTION (maxrecursion 0)
+
+delete from #flat where loc = 0  -- take out the starting row.
+
+
+-- ; with cte as 
+-- (
+-- select curr = @flat, loc = PATINDEX('%[Fs]%', @flat) , rem = right(@flat, len(@flat) - PATINDEX('%[Fs]%', @flat) )
+-- union all 
+-- select rem, loc + PATINDEX('%[Fs]%', rem), right(rem, len(rem) - PATINDEX('%[Fs]%', rem) ) 
+-- from cte
+-- where PATINDEX('%[Fs]%', rem) != 0
+-- ) 
+-- select *
+-- into #finder_separator_covered
+-- from cte 
+-- OPTION(maxrecursion 0)
 
 
 
@@ -320,7 +338,7 @@ OPTION (maxrecursion 0)
 
 
 -- select * from #finder_separator_covered 
-drop table if EXISTS #alignments 
+drop table if EXISTS #alignments  -- alignments covered area
 
 ; with cte as
 (
@@ -331,18 +349,69 @@ ac.ver
 , ac.point_2
 , ac.covered_point_start
 , ac.covered_point_end
-, overlapped = count(fsc.loc) over (partition by ac.ver, ac.n, ac.point_1, ac.point_2 )
+, overlapped = count(f.loc) over (partition by ac.ver, ac.n, ac.point_1, ac.point_2 )
 from #alignment_covered ac 
-left outer join #finder_separator_covered  fsc 
-on fsc.loc between ac.covered_point_start and ac.covered_point_end 
+left outer join #flat f
+on f.loc between ac.covered_point_start and ac.covered_point_end 
+and f.curr in ('F', 's')
 )
 select 
 *
 , center_loc = n*(point_1-1) + point_2 -- get the center location of the alignment pattern
-into #alignments from cte where overlapped = 0 
+, rn = ROW_NUMBER() over(partition by point_1 , point_2 order by covered_point_start) -- row number for each alignment block
+into #alignments 
+from cte 
+where overlapped = 0 
 
 
-select * from #alignments
+update tgt 
+set tgt.curr = 'a'
+from #flat tgt inner join #alignments src 
+on tgt.loc between src.covered_point_start and src.covered_point_end 
+
+-- for upper and lower 
+update tgt 
+set tgt.curr = 'A'
+from #flat tgt inner join #alignments src 
+on tgt.loc between src.covered_point_start and src.covered_point_end
+and src.rn in (1, 5)
+
+-- for left and right
+update tgt 
+set tgt.curr = 'A'
+from #flat tgt inner join #alignments src 
+on tgt.loc in (src.covered_point_start,  src.covered_point_end) 
+and src.rn not in (1, 5)
+
+
+-- for center
+update tgt 
+set tgt.curr = 'A'
+from #flat tgt inner join #alignments src 
+on tgt.loc = src.center_loc
+
+
+-- select * from #flat
+
+-- location starts from 1, to avoid 57 / 57 --> 1, which should be on the same first row
+drop table if exists #canvas_staging
+
+select 
+id = (loc-1)/@blocks -- this is the group id
+, cell = STRING_AGG(curr, '') within group(order by (loc-1)/@blocks, loc)
+into #canvas_staging
+from #flat 
+group by (loc-1)/@blocks
+
+
+select * from #canvas_staging
+order by 1 
+-- select * from #flat
+
+-- select * from #alignments
+
+
+-- select * from #canvas
 
 
 
