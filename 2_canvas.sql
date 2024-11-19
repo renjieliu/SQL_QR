@@ -242,8 +242,6 @@ select v, p = cast(p6 as int)+ 1  from cte where cast(p6 as int) <> 0
 union all
 select v, p = cast(p7 as int)+ 1  from cte where cast(p7 as int) <> 0
 
--- delete from #version_alignment_points where pos = 0 
-
 
 drop table if exists #version_alignment_location
 
@@ -390,31 +388,100 @@ on tgt.loc = src.center_loc
 
 -- select * from #flat
 
--- location starts from 1, to avoid 57 / 57 --> 1, which should be on the same first row
-drop table if exists #canvas_staging
+alter table #flat drop column rem 
 
-select 
-id = (loc-1)/@blocks -- this is the group id
-, cell = STRING_AGG(curr, '') within group(order by (loc-1)/@blocks, loc)
-into #canvas_staging
-from #flat 
-group by (loc-1)/@blocks
+
+
+-- location starts from 1, to avoid 57 / 57 --> 1, which should be on the same first row
+
+-- drop table if exists #canvas_staging
+
+-- select 
+-- rn = (loc-1)/@blocks -- this is the group id
+-- , cell = STRING_AGG(curr, '') within group(order by (loc-1)/@blocks, loc)
+-- into #canvas_staging
+-- from #flat 
+-- group by (loc-1)/@blocks
 
 
 
 
 -- next is to plot the reserved area
 
+-- location starts from 1, to avoid 25 / 25 --> 1, which should be on the same first row
+drop table if exists #canvas_staging 
+
+select 
+loc
+, rn = (loc-1)/57
+, cn = (loc-1) %57
+, curr
+into #canvas_staging
+from #flat
+
+update #canvas_staging set rn = rn +1, cn = cn + 1 -- row and col starts from 1 
+
+---- for version <= 7 
+
+-- PDP-1 lower line
+update #canvas_staging 
+set curr = 'r'
+where 
+rn = 9 
+and cn <= 9 
+and curr = '_'
+and @version_num < 7
+
+
+-- PDP-1 upper right line
+update #canvas_staging 
+set curr = 'r'
+where 
+rn <= 9 
+and cn = 9 
+and curr = '_'
+and @version_num < 7
+
+-- PDP-2 lower line
+update #canvas_staging 
+set curr = 'r'
+where 
+rn = 9 
+and cn >= @blocks - 7
+and curr = '_'
+and @version_num < 7
+
+-- PDP-3 right line
+update #canvas_staging 
+set curr = 'r'
+where 
+rn >= @blocks - 7 
+and cn = 9
+and curr = '_'
+and @version_num < 7
+
+
+---- for version > 7, reserved region
 
 
 
+-- PDP-2 left region
+update #canvas_staging 
+set curr = 'r'
+where 
+rn <= 6 
+and cn BETWEEN @blocks - 10 and 57 - 8 
+and curr = '_'
+and @version_num >=7 
 
-
-
-
-
-
-
+-- PDP-3 upper region
+update #canvas_staging 
+set curr = 'r'
+where 
+rn between @blocks - 10 and 57 - 8 
+and cn <= 6 
+and curr = '_'
+and @version_num >= 7
 
 
 --plot the dark module 
@@ -422,8 +489,19 @@ update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where i
 
 
 
+
+
+
+select 
+rn 
+, cell = STRING_AGG(curr, '') within group(order by rn, loc)
+from #canvas_staging
+group by rn 
+
+
 select * from #canvas_staging
 order by 1 
+
 
 
 
