@@ -4,10 +4,13 @@
 -- with a smaller squares on the right bottom for alignment, AP-4
 -- the alignment pattern differs from version to version
 
+
+-- convention - all the lower case letter will be marked as 0, and upper case will be marked as 1 in the end 
+
 -- '-' for empty
--- 'F' for the finder patern 
--- 'S' for separators
--- 'T' for timing patterns-1 
+-- 'F' for the finder patern  
+-- 's' for separators  
+-- 'T' for timing patterns-1
 -- 't' for timing patterns-0
 -- 'D' for the dark module
 
@@ -66,11 +69,11 @@ update #canvas set cell = left(cell, 2) + REPLICATE('F', 3) + right(cell, @block
 -- adding separators for PDP 1 
 
 -- bottom line of PDP-1
-update #canvas set cell = REPLICATE('S', @finder+1) + right(cell, @blocks - (@finder+1) ) where id = @finder+1 
+update #canvas set cell = REPLICATE('s', @finder+1) + right(cell, @blocks - (@finder+1) ) where id = @finder+1 
 -- right line of PDP-1
-update #canvas set cell = left(cell, @finder) + 'S' + right(cell, @blocks - (@finder+1) ) where id between 1 and @finder
+update #canvas set cell = left(cell, @finder) + 's' + right(cell, @blocks - (@finder+1) ) where id between 1 and @finder
 -- boundary of the inner circle of PDP-1 
-update #canvas set cell = replace (left(cell, @finder), '_', 'S') + right(cell, len(cell)-@finder) where id between 2 and @finder-1 -- only update the left @finder characters, if it's _ , then it's a separator
+update #canvas set cell = replace (left(cell, @finder), '_', 's') + right(cell, len(cell)-@finder) where id between 2 and @finder-1 -- only update the left @finder characters, if it's _ , then it's a separator
 
 
 
@@ -90,11 +93,11 @@ update #canvas set cell = left(cell, @blocks - 2 - 3) + REPLICATE('F', 3) + righ
 -- adding separators for PDP 2 
 
 -- bottom line of PDP-2
-update #canvas set cell = left(cell, @blocks - (@finder+1)) + REPLICATE('S', @finder+1) where id = @finder+1 
+update #canvas set cell = left(cell, @blocks - (@finder+1)) + REPLICATE('s', @finder+1) where id = @finder+1 
 -- left line of PDP-2
-update #canvas set cell = left(cell, @blocks - (@finder+1)) + 'S' + right(cell, @finder ) where id between 1 and @finder
+update #canvas set cell = left(cell, @blocks - (@finder+1)) + 's' + right(cell, @finder ) where id between 1 and @finder
 -- boundary of the inner circle of PDP-2 
-update #canvas set cell = left(cell, len(cell)- (@finder+1) ) + replace (right(cell, @finder+1), '_', 'S') where id between 2 and @finder-1 -- only update the left @finder characters, if it's _ , then it's a separator
+update #canvas set cell = left(cell, len(cell)- (@finder+1) ) + replace (right(cell, @finder+1), '_', 's') where id between 2 and @finder-1 -- only update the left @finder characters, if it's _ , then it's a separator
 
 
 
@@ -114,11 +117,11 @@ update #canvas set cell = left(cell, 2) + REPLICATE('F', 3) + right(cell, @block
 --adding separators for PDP 3
 
 -- upper line of PDP-3
-update #canvas set cell = REPLICATE('S', @finder+1) + right(cell, @blocks - (@finder+1) ) where id = @blocks-@finder 
+update #canvas set cell = REPLICATE('s', @finder+1) + right(cell, @blocks - (@finder+1) ) where id = @blocks-@finder 
 -- right line of PDP-3
-update #canvas set cell = left(cell, @finder) + 'S' + right(cell, @blocks - (@finder+1) ) where id between @blocks-@finder and @blocks
+update #canvas set cell = left(cell, @finder) + 's' + right(cell, @blocks - (@finder+1) ) where id between @blocks-@finder and @blocks
 -- boundary of the inner circle of PDP-3 
-update #canvas set cell = replace(left(cell, @finder+1), '_', 'S') + right(cell, @blocks - (@finder+1)) where id between @blocks-(@finder-1) and @blocks-1  -- only update the left @finder characters, if it's _ , then it's a separator
+update #canvas set cell = replace(left(cell, @finder+1), '_', 's') + right(cell, @blocks - (@finder+1)) where id between @blocks-(@finder-1) and @blocks-1  -- only update the left @finder characters, if it's _ , then it's a separator
 
 
 -- Adding timing patterns
@@ -221,28 +224,26 @@ select '38' ,'6' ,'32' ,'58' ,'84' ,'110' ,'136' ,'162'
 select '39' ,'6' ,'26' ,'54' ,'82' ,'110' ,'138' ,'166'  
  union all
 select '40' ,'6' ,'30' ,'58' ,'86' ,'114' ,'142' ,'170'  
- 
-
-
 ) 
-select ver = cast(v as int), pos = cast(p1 as int)
+
+select 
+ver = cast(v as int), pos = cast(p1 as int) + 1  -- the location in the table is 0-based. but my row id is 1-based.
 into #version_alignment_points
  from cte 
 union all
-select v, p = cast(p2 as int) from cte 
+select v, p = cast(p2 as int)+ 1 from cte where cast(p2 as int) <> 0
 union all
-select v, p = cast(p3 as int) from cte 
+select v, p = cast(p3 as int)+ 1  from cte where cast(p3 as int) <> 0
 union all
-select v, p = cast(p4 as int) from cte 
+select v, p = cast(p4 as int)+ 1  from cte where cast(p4 as int) <> 0
 union all
-select v, p = cast(p5 as int) from cte 
+select v, p = cast(p5 as int)+ 1  from cte where cast(p5 as int) <> 0
 union all
-select v, p = cast(p6 as int) from cte 
+select v, p = cast(p6 as int)+ 1  from cte where cast(p6 as int) <> 0
 union all
-select v, p = cast(p7 as int) from cte 
+select v, p = cast(p7 as int)+ 1  from cte where cast(p7 as int) <> 0
 
-
-delete from #version_alignment_points where pos = 0 
+-- delete from #version_alignment_points where pos = 0 
 
 
 drop table if exists #version_alignment_location
@@ -258,9 +259,88 @@ inner join #version_alignment_points p2 on p1.ver = p2.ver
 order by 1 
 
 
--- select * from #version_alignment_location
--- where ver = 10
--- order by 1, 2, 3 
+
+-- get all the blocks where it's being taken by the finder or separator pattern
+
+-- put the matrix into one flat string, and find the location of all the F and s - Finder and separator
+declare @flat nvarchar(max) = (select flat = STRING_AGG(cell,'') within group(order by id ) from #canvas )
+ 
+drop table if exists #finder_separator_covered
+
+; with cte as 
+(
+select curr = @flat, loc = PATINDEX('%[Fs]%', @flat) , rem = right(@flat, len(@flat) - PATINDEX('%[Fs]%', @flat) )
+union all 
+select rem, loc + PATINDEX('%[Fs]%', rem), right(rem, len(rem) - PATINDEX('%[Fs]%', rem) ) 
+from cte
+where PATINDEX('%[Fs]%', rem) != 0
+) 
+select *
+into #finder_separator_covered
+from cte 
+OPTION(maxrecursion 0)
+
+
+
+-- next is to compute 5*5 points of the alignment pattern
+-- the point is in the middle of the 5*5 pixel. 
+-- if the point is at 6, 7 location, ver is 10
+-- the upper left corner is 6 * (10-3) (full rows) + 7 (current col) - 2 (offset)
+
+drop table if exists #base_uppers
+
+select 
+val.*
+, v.n
+, left_upper_point = v.n *(point_1-3) + point_2 - 2 
+, right_upper_point = v.n *(point_1-3) + point_2 + 2
+into #base_uppers
+from #version_alignment_location val inner join #versions v
+on val.ver = v.v
+where ver = 10 -- @version_num
+
+
+-- select * from #base_uppers
+
+
+drop table if exists #alignment_covered
+
+; with cte as 
+(
+select rn = 1,  ver, n, point_1, point_2, covered_point_start = left_upper_point, covered_point_end = right_upper_point from #base_uppers
+union all 
+select rn + 1, ver, n, point_1, point_2, covered_point_start+n, covered_point_end +n from cte
+where rn < 5
+) 
+select * into #alignment_covered 
+from cte 
+OPTION (maxrecursion 0)
+
+
+-- select * from #finder_separator_covered 
+drop table if EXISTS #alignments 
+
+; with cte as
+(
+select 
+ac.ver
+, ac.n
+, ac.point_1
+, ac.point_2
+, ac.covered_point_start
+, ac.covered_point_end
+, overlapped = count(fsc.loc) over (partition by ac.ver, ac.n, ac.point_1, ac.point_2 )
+from #alignment_covered ac 
+left outer join #finder_separator_covered  fsc 
+on fsc.loc between ac.covered_point_start and ac.covered_point_end 
+)
+select 
+*
+, center_loc = n*(point_1-1) + point_2 -- get the center location of the alignment pattern
+into #alignments from cte where overlapped = 0 
+
+select * from #alignments
+
 
 
 -- next is to check for each point, if it's overlapping with the finder pattern
@@ -268,7 +348,7 @@ order by 1
 
 
 
-select * from #canvas
+-- select * from #canvas
 
 
 
