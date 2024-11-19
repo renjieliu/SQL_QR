@@ -5,8 +5,6 @@ drop table if exists #base
 select c = convert(varchar(max), cast(@txt as varbinary(max)), 2 )
 into #base 
 
-
-
 drop table if exists #hex_bin_lkp
 
 ; with cte as (
@@ -70,5 +68,6 @@ option(maxrecursion 0)
 -- Here is the binary form of the string
 
 select res = string_agg(bin_form, '') within group(order by id) from #bin_form 
+
 
 
