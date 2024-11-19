@@ -9,7 +9,11 @@ Generating a QR (Quick Response) code.
 Steps and screens from YouTube video 
 **[How do QR codes work? (I built one myself to find out)](https://www.youtube.com/watch?v=w5ebcowAJD8)**
 
-Reference - **[Creating a QR Code step by step](https://www.nayuki.io/page/creating-a-qr-code-step-by-step)**
+Reference - <br>
+1. **[Creating a QR Code step by step](https://www.nayuki.io/page/creating-a-qr-code-step-by-step)**
+
+2. **[Thonky.com's QR Code Tutorial](https://www.thonky.com/qr-code-tutorial/module-placement-matrix)**
+
 
 * convert each character to 010101
 
