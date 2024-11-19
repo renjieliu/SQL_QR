@@ -491,6 +491,17 @@ update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where i
 -- Next, to zigzag apply the data to the canvas 
 
 
+-- 1. type of the data, 4 bits
+
+
+
+-- 2. number of the characters in the message, 8 bits 
+
+
+
+
+-- 3. The real characters in binary form.
+
 
 
 
