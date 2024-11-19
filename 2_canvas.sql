@@ -488,7 +488,7 @@ and @version_num >= 7
 update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where id = @blocks - 7
 
 
--- Next - to zigzag apply the data to the canvas 
+-- Next, to zigzag apply the data to the canvas 
 
 
 
