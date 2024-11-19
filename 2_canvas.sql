@@ -7,19 +7,23 @@
 -- '-' for empty
 -- 'p' for the PDP 
 -- 's' for separators
--- ''
-
+-- 'T' for timing patterns-1 
+-- 't' for timing patterns-0
+-- 'd' for the dark module
 
 --  select nchar('9632')
 
 drop table if exists #canvas 
 
+declare @totalpixel int = 57 
+declare @pdp int = 7
+
 ; with cte as 
 
-(select id = 1, cell = REPLICATE(N'_', 21)
+(select id = 1, cell = REPLICATE(N'_', @totalpixel)
 union all 
 select id + 1, cell from cte 
-where id < 21
+where id < @totalpixel
 )
 
 select *
@@ -29,8 +33,6 @@ option (maxrecursion 0)
 
 
 
-declare @totalpixel int = 21 
-declare @pdp int = 7
 
 -- PDP 1
 --top line of PDP-1
@@ -103,13 +105,28 @@ update #canvas set cell = left(cell, @pdp) + 's' + right(cell, @totalpixel - (@p
 update #canvas set cell = replace(left(cell, @pdp+1), '_', 's') + right(cell, @totalpixel - (@pdp+1)) where id between @totalpixel-(@pdp-1) and @totalpixel-1  -- only update the left @pdp characters, if it's _ , then it's a separator
 
 
+-- Adding timing patterns
 
-select * from #canvas
+-- vertial, mark T 
+update #canvas set cell = left(cell, 6) + 'T' + right (cell, @totalpixel - 7) where id % 2 = 1 and id between 9 and @totalpixel - 8  
+-- vertial, mark t 
+update #canvas set cell = left(cell, 6) + 't' + right (cell, @totalpixel - 7) where id % 2 = 0 and id between 9 and @totalpixel - 8 
+
+-- horizontal, mark Tt
+update #canvas set cell = left(cell, 8) + left(REPLICATE('Tt', @totalpixel), @totalpixel - 16 ) + right (cell, 8)   where id = @pdp -- just let it repeat, and take the numbers to fill the gap, which is 16 for all the versions
+
+
+
+--plot the dark module 
+update #canvas set cell = left(cell, 8) + 'd' + right(cell, @totalpixel - 9) where id = @totalpixel - 7
+
+
 
 -- AP-4 -- need to check the positions 
 
 
 
+select * from #canvas
 
 
 -- update #canvas set cell = replace(cell, 'p', nchar(9632))
