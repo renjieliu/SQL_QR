@@ -13,6 +13,8 @@
 -- 'T' for timing patterns-1
 -- 't' for timing patterns-0
 -- 'D' for the dark module
+-- 'A' for alignment 
+-- 'a' for inside of alignment
 
 --  select nchar('9632')
 
@@ -338,6 +340,7 @@ select
 *
 , center_loc = n*(point_1-1) + point_2 -- get the center location of the alignment pattern
 into #alignments from cte where overlapped = 0 
+
 
 select * from #alignments
 
