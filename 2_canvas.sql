@@ -511,6 +511,23 @@ from #canvas_staging
 where cell = '_'
 
 
+select * from #avail 
+
+
+
+
+select 
+rn 
+, cell = STRING_AGG(cell, '') within group(order by rn, loc)
+from #canvas_staging
+group by rn 
+
+
+
+
+
+
+/* 
 select
 loc
 , nxt = case when col_direction = 0 and cn % 2 = 1 then -- for the odd columns and it's going up
@@ -534,14 +551,7 @@ loc
         end 
 
 from #avail a1 order by 1 desc 
-
-
-
-select 
-rn 
-, cell = STRING_AGG(cell, '') within group(order by rn, loc)
-from #canvas_staging
-group by rn 
+ */
 
 
 
