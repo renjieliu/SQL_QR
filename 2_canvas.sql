@@ -511,7 +511,30 @@ from #canvas_staging
 where cell = '_'
 
 
-select * from #avail 
+select
+loc
+, nxt = case when col_direction = 0 and cn % 2 = 1 then -- for the odd columns and it's going up
+                        case when exists(select * from #avail a2 where a2.loc = a1.loc - 1 ) then a1.loc - 1 -- use the left one
+                             else 'TBD'
+                        end 
+             when col_direction = 0 and cn % 2 = 0 then -- for the even columns and it's going up
+                  case when 1=1 then 'TBD'
+                       else 'TBD'                
+                  end 
+                     
+             when col_direction = 1 and cn % 2 = 1 then -- for the odd columns and it's going down
+                  case when 1=1 then 'TBD'
+                       else 'TBD'                
+                  end 
+
+             when col_direction = 1 and cn % 2 = 0 then -- for the even columns and it's going down
+                  case when 1=1 then 'TBD'
+                       else 'TBD'                
+                  end 
+
+        end 
+
+from #avail a1 order by 1 desc 
 
 
 
