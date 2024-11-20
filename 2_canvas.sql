@@ -531,7 +531,6 @@ loc
                   case when 1=1 then 'TBD'
                        else 'TBD'                
                   end 
-
         end 
 
 from #avail a1 order by 1 desc 
