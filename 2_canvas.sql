@@ -1,17 +1,17 @@
--- using QR code version 2 as a starter, version 1 does not have any alignment pattern.
--- this is to have 3 position detection patterns (PDP) on the corners
+-- using QR code version 2 as a starter, version 1 does not have any alignment pattecanvas_rn.
+-- this is to have 3 position detection pattecanvas_rns (PDP) on the cocanvas_rners
 -- PDP on the left upper is PDP-1, on the right upper is PDP-2, on the left lower is PDP-3
 -- with a smaller squares on the right bottom for alignment, AP-4
--- the alignment pattern differs from version to version
+-- the alignment pattecanvas_rn differs from version to version
 
 
 -- convention - all the lower case letter will be marked as 0, and upper case will be marked as 1 in the end 
 
 -- '-' for empty
--- 'F' for the finder patern  
+-- 'F' for the finder patecanvas_rn  
 -- 's' for separators  
--- 'T' for timing patterns-1
--- 't' for timing patterns-0
+-- 'T' for timing pattecanvas_rns-1
+-- 't' for timing pattecanvas_rns-0
 -- 'D' for the dark module
 -- 'A' for alignment 
 -- 'a' for inside of alignment
@@ -128,7 +128,7 @@ update #canvas set cell = left(cell, @finder) + 's' + right(cell, @blocks - (@fi
 update #canvas set cell = replace(left(cell, @finder+1), '_', 's') + right(cell, @blocks - (@finder+1)) where id between @blocks-(@finder-1) and @blocks-1  -- only update the left @finder characters, if it's _ , then it's a separator
 
 
--- Adding timing patterns
+-- Adding timing pattecanvas_rns
 
 -- vertial, mark T 
 update #canvas set cell = left(cell, 6) + 'T' + right (cell, @blocks - 7) where id % 2 = 1 and id between 9 and @blocks - 8  
@@ -257,7 +257,7 @@ order by 1
 
 
 
--- get all the blocks where it's being taken by the finder or separator pattern
+-- get all the blocks where it's being taken by the finder or separator pattecanvas_rn
 
 -- put the matrix into one flat string, and find the location of all the F and s - Finder and separator
 
@@ -297,10 +297,10 @@ delete from #flat where loc = 0  -- take out the starting row.
 
 
 
--- next is to compute 5*5 points of the alignment pattern
+-- next is to compute 5*5 points of the alignment pattecanvas_rn
 -- the point is in the middle of the 5*5 pixel. 
 -- if the point is at 6, 7 location, ver is 10
--- the upper left corner is 6 * (10-3) (full rows) + 7 (current col) - 2 (offset)
+-- the upper left cocanvas_rner is 6 * (10-3) (full rows) + 7 (current col) - 2 (offset)
 
 drop table if exists #base_uppers
 
@@ -322,10 +322,10 @@ drop table if exists #alignment_covered
 
 ; with cte as 
 (
-select rn = 1,  ver, n, point_1, point_2, covered_point_start = left_upper_point, covered_point_end = right_upper_point from #base_uppers
+select canvas_rn = 1,  ver, n, point_1, point_2, covered_point_start = left_upper_point, covered_point_end = right_upper_point from #base_uppers
 union all 
-select rn + 1, ver, n, point_1, point_2, covered_point_start+n, covered_point_end +n from cte
-where rn < 5
+select canvas_rn + 1, ver, n, point_1, point_2, covered_point_start+n, covered_point_end +n from cte
+where canvas_rn < 5
 ) 
 select * into #alignment_covered 
 from cte 
@@ -352,8 +352,8 @@ and f.curr in ('F', 's')
 )
 select 
 *
-, center_loc = n*(point_1-1) + point_2 -- get the center location of the alignment pattern
-, rn = ROW_NUMBER() over(partition by point_1 , point_2 order by covered_point_start) -- row number for each alignment block
+, center_loc = n*(point_1-1) + point_2 -- get the center location of the alignment pattecanvas_rn
+, canvas_rn = ROW_NUMBER() over(partition by point_1 , point_2 order by covered_point_start) -- row number for each alignment block
 into #alignments 
 from cte 
 where overlapped = 0 
@@ -369,14 +369,14 @@ update tgt
 set tgt.curr = 'A'
 from #flat tgt inner join #alignments src 
 on tgt.loc between src.covered_point_start and src.covered_point_end
-and src.rn in (1, 5)
+and src.canvas_rn in (1, 5)
 
 -- for left and right
 update tgt 
 set tgt.curr = 'A'
 from #flat tgt inner join #alignments src 
 on tgt.loc in (src.covered_point_start,  src.covered_point_end) 
-and src.rn not in (1, 5)
+and src.canvas_rn not in (1, 5)
 
 
 -- for center
@@ -397,7 +397,7 @@ alter table #flat drop column rem
 -- drop table if exists #canvas_staging
 
 -- select 
--- rn = (loc-1)/@blocks -- this is the group id
+-- canvas_rn = (loc-1)/@blocks -- this is the group id
 -- , cell = STRING_AGG(curr, '') within group(order by (loc-1)/@blocks, loc)
 -- into #canvas_staging
 -- from #flat 
@@ -413,15 +413,15 @@ drop table if exists #canvas_staging
 
 select 
 loc
-, rn = (loc-1) / @blocks
-, cn = (loc-1) % @blocks
+, canvas_rn = (loc-1) / @blocks -- the row number for the cell on the canvas
+, canvas_cn = (loc-1) % @blocks -- the col number for the cell on the canvas
 , cell = curr
 , total_blocks = @blocks
-, col_direction = cast(NULL as int)
+, col_direction = cast(NULL as varchar)
 into #canvas_staging
 from #flat
 
-update #canvas_staging set rn = rn +1, cn = cn + 1 -- row and col starts from 1 
+update #canvas_staging set canvas_rn = canvas_rn +1, canvas_cn = canvas_cn + 1 -- row and col starts from 1 
 
 ---- for all the versions <= 7 
 
@@ -429,8 +429,8 @@ update #canvas_staging set rn = rn +1, cn = cn + 1 -- row and col starts from 1
 update #canvas_staging 
 set cell = 'r'
 where 
-rn = 9 
-and cn <= 9 
+canvas_rn = 9 
+and canvas_cn <= 9 
 and cell = '_'
 -- and @version_num < 7
 
@@ -439,8 +439,8 @@ and cell = '_'
 update #canvas_staging 
 set cell = 'r'
 where 
-rn <= 9 
-and cn = 9 
+canvas_rn <= 9 
+and canvas_cn = 9 
 and cell = '_'
 -- and @version_num < 7
 
@@ -448,8 +448,8 @@ and cell = '_'
 update #canvas_staging 
 set cell = 'r'
 where 
-rn = 9 
-and cn >= @blocks - 7
+canvas_rn = 9 
+and canvas_cn >= @blocks - 7
 and cell = '_'
 -- and @version_num < 7
 
@@ -457,8 +457,8 @@ and cell = '_'
 update #canvas_staging 
 set cell = 'r'
 where 
-rn >= @blocks - 7 
-and cn = 9
+canvas_rn >= @blocks - 7 
+and canvas_cn = 9
 and cell = '_'
 -- and @version_num < 7
 
@@ -471,8 +471,8 @@ and cell = '_'
 update #canvas_staging 
 set cell = 'r'
 where 
-rn <= 6 
-and cn BETWEEN @blocks - 10 and 57 - 8 
+canvas_rn <= 6 
+and canvas_cn BETWEEN @blocks - 10 and 57 - 8 
 and cell = '_'
 and @version_num >=7 
 
@@ -480,14 +480,14 @@ and @version_num >=7
 update #canvas_staging 
 set cell = 'r'
 where 
-rn between @blocks - 10 and 57 - 8 
-and cn <= 6 
+canvas_rn between @blocks - 10 and 57 - 8 
+and canvas_cn <= 6 
 and cell = '_'
 and @version_num >= 7
 
 
 --plot the dark module 
-update #canvas_staging set cell = 'D' where cn = 9 and rn = total_blocks - 7
+update #canvas_staging set cell = 'D' where canvas_cn = 9 and canvas_rn = total_blocks - 7
 
 
 -- Next, to zigzag apply the data to the canvas 
@@ -499,16 +499,6 @@ update #canvas_staging set cell = 'D' where cn = 9 and rn = total_blocks - 7
 -- eg. col = 57, 57/2 = 28, even, it's up 
 -- col = 56, 56/2 = 28, even, it's up
 -- col = 55, 55/2 = 27, odd, it's down
-
-update #canvas_staging set col_direction = case when (cn / 2) %2 = 0 then 0 else 1 end
-
-
-drop table if exists #avail
-
-select loc, rn, cn, col_direction 
-into #avail 
-from #canvas_staging
-where cell = '_'
 
 
 /* 
@@ -523,7 +513,7 @@ Steps for the Zigzag -
  
  - Regular case, from all the available cells (row - 1, col + 1) or (row-1, col) 
  
- - If not found, turn left, from the available cells (row, col - 1) -- this will take care of the Timing pattern as well.
+ - If not found, turn left, from the available cells (row, col - 1) -- this will take care of the Timing pattecanvas_rn as well.
 
 1.2 Odd numbered column
  
@@ -535,7 +525,7 @@ Steps for the Zigzag -
  
  - Regular case, from the available cells, (row + 1, col + 1) or (row + 1,  col)
  
- - If not found, from all the available cells, turn left (row, col - 1)
+ - If not found, from all the available cells, turn  left (row, col - 1)
 
 2.2 Odd numbered column
  
@@ -546,13 +536,198 @@ Steps for the Zigzag -
 
 
 
+update #canvas_staging set col_direction = case when (canvas_cn / 2) % 2 = 0 then 'u' else 'd' end
+
+
+drop table if exists #avail
+
+select 
+loc
+
+, canvas_rn
+, canvas_cn
+
+, col_direction
+, cell
+
+into #avail 
+from #canvas_staging
+where cell = '_'
+
+
+
+drop table if exists #nxt
+
+
 
 
 select 
-rn 
-, cell = STRING_AGG(cell, '') within group(order by rn, loc)
-from #canvas_staging
-group by rn 
+curr.*
+, zigzag_group = 'ue' --up and even column
+, nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn, nxt3.canvas_rn) 
+, nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn, nxt3.canvas_cn) 
+into #nxt
+from #avail curr 
+left outer join #avail nxt1  -- normal zigzag, to find the nearest previous row 
+on (nxt1.canvas_rn < curr.canvas_rn and nxt1.canvas_cn = curr.canvas_cn + 1)
+and not exists (select * from #avail nxt11 
+                 where nxt11.canvas_rn < curr.canvas_rn 
+                    and nxt11.canvas_cn = curr.canvas_cn
+                    and nxt11.canvas_rn > nxt1.canvas_rn
+                ) 
+
+left outer join #avail nxt2 -- same col, nearest previous rows
+on (nxt2.canvas_rn < curr.canvas_rn and nxt2.canvas_cn = curr.canvas_cn)
+and not exists (select * from #avail nxt22 
+                 where nxt22.canvas_rn < curr.canvas_rn 
+                    and nxt22.canvas_cn = curr.canvas_cn
+                    and nxt22.canvas_rn > nxt2.canvas_rn
+                )  
+
+left outer join #avail nxt3  -- same row, nearest left cols
+on (nxt3.canvas_rn = curr.canvas_rn and nxt3.canvas_cn < curr.canvas_cn)
+and not exists (select * from #avail nxt33
+                 where nxt33.canvas_rn = curr.canvas_rn 
+                    and nxt33.canvas_cn < curr.canvas_cn
+                    and nxt33.canvas_cn > nxt3.canvas_cn
+                ) 
+
+where 
+curr.col_direction = 'u'
+and curr.canvas_cn %2 = 0 -- up and even col
+-- and curr.canvas_rn = 10 and curr.canvas_cn = 8
+
+
+insert into #nxt
+select 
+curr.*
+, zigzag_group = 'uo' --up and odd column
+, nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn) 
+, nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn) 
+from #avail curr 
+left outer join #avail nxt1  -- same row, nearest left cols
+on (nxt1.canvas_rn = curr.canvas_rn and nxt1.canvas_cn < curr.canvas_cn)
+and not exists (select * from #avail nxt11
+                 where nxt11.canvas_rn = curr.canvas_rn 
+                    and nxt11.canvas_cn < curr.canvas_cn
+                    and nxt11.canvas_cn > nxt1.canvas_cn
+                ) 
+
+left outer join #avail nxt2 -- same col, nearest previous rows
+on (nxt2.canvas_rn < curr.canvas_rn and nxt2.canvas_cn = curr.canvas_cn)
+and not exists (select * from #avail nxt22 
+                 where nxt22.canvas_rn < curr.canvas_rn 
+                    and nxt22.canvas_cn = curr.canvas_cn
+                    and nxt22.canvas_rn > nxt2.canvas_rn
+                )  
+
+where 
+curr.col_direction = 'u'
+and curr.canvas_cn %2 = 1 -- up and even col
+-- and curr.canvas_rn = 10 and curr.canvas_cn = 8
+
+
+
+insert into #nxt
+select 
+curr.*
+, zigzag_group = 'de' --down and even column
+, nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn, nxt3.canvas_rn) 
+, nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn, nxt3.canvas_cn) 
+from #avail curr 
+left outer join #avail nxt1  -- normal zigzag, to find the nearest following row 
+on (nxt1.canvas_rn > curr.canvas_rn and nxt1.canvas_cn = curr.canvas_cn + 1)
+and not exists (select * from #avail nxt11 
+                 where nxt11.canvas_rn > curr.canvas_rn 
+                    and nxt11.canvas_cn = curr.canvas_cn
+                    and nxt11.canvas_rn < nxt1.canvas_rn
+                ) 
+
+left outer join #avail nxt2 -- same col, nearest following rows
+on (nxt2.canvas_rn > curr.canvas_rn and nxt2.canvas_cn = curr.canvas_cn)
+and not exists (select * from #avail nxt22 
+                 where nxt22.canvas_rn > curr.canvas_rn 
+                    and nxt22.canvas_cn = curr.canvas_cn
+                    and nxt22.canvas_rn < nxt2.canvas_rn
+                )  
+
+left outer join #avail nxt3  -- same row, nearest left cols
+on (nxt3.canvas_rn = curr.canvas_rn and nxt3.canvas_cn < curr.canvas_cn)
+and not exists (select * from #avail nxt33
+                 where nxt33.canvas_rn = curr.canvas_rn 
+                    and nxt33.canvas_cn < curr.canvas_cn
+                    and nxt33.canvas_cn > nxt3.canvas_cn
+                ) 
+
+where 
+curr.col_direction = 'd'
+and curr.canvas_cn %2 = 0 -- up and even col
+--and curr.canvas_rn = 26 and curr.canvas_cn = 30
+
+
+
+insert into #nxt
+select 
+curr.*
+, zigzag_group = 'do' --down and odd column
+, nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn) 
+, nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn) 
+from #avail curr 
+left outer join #avail nxt1  -- same row, nearest left cols
+on (nxt1.canvas_rn = curr.canvas_rn and nxt1.canvas_cn < curr.canvas_cn)
+and not exists (select * from #avail nxt11
+                 where nxt11.canvas_rn = curr.canvas_rn 
+                    and nxt11.canvas_cn < curr.canvas_cn
+                    and nxt11.canvas_cn > nxt1.canvas_cn
+                ) 
+
+left outer join #avail nxt2 -- same col, nearest following rows
+on (nxt2.canvas_rn > curr.canvas_rn and nxt2.canvas_cn = curr.canvas_cn)
+and not exists (select * from #avail nxt22 
+                 where nxt22.canvas_rn > curr.canvas_rn 
+                    and nxt22.canvas_cn = curr.canvas_cn
+                    and nxt22.canvas_rn < nxt2.canvas_rn
+                )  
+
+where 
+curr.col_direction = 'd'
+and curr.canvas_cn %2 = 1 -- up and even col
+-- and curr.canvas_rn = 10 and curr.canvas_cn = 8
+
+select * from #nxt 
+
+
+drop table if exists #canvas_zigzag
+
+select 
+s.*
+, n.zigzag_group
+, n.nxt_rn
+, n.nxt_cn
+into #canvas_zigzag
+from #canvas_staging s left outer join #nxt n
+on s.loc = n.loc
+
+
+
+
+select * from #canvas_zigzag
+
+
+
+select * from #avail
+where canvas_rn = 10 and canvas_cn = 8
+
+
+
+
+
+
+select 
+canvas_rn 
+, cell = STRING_AGG(cell, '') within group(order by canvas_rn, loc)
+from #canvas_zigzag
+group by canvas_rn 
 
 
 
@@ -562,21 +737,21 @@ group by rn
 /* 
 select
 loc
-, nxt = case when col_direction = 0 and cn % 2 = 1 then -- for the odd columns and it's going up
+, nxt = case when col_direction = 0 and canvas_cn % 2 = 1 then -- for the odd columns and it's going up
                         case when exists(select * from #avail a2 where a2.loc = a1.loc - 1 ) then a1.loc - 1 -- use the left one
                              else 'TBD'
                         end 
-             when col_direction = 0 and cn % 2 = 0 then -- for the even columns and it's going up
+             when col_direction = 0 and canvas_cn % 2 = 0 then -- for the even columns and it's going up
                   case when 1=1 then 'TBD'
                        else 'TBD'                
                   end 
                      
-             when col_direction = 1 and cn % 2 = 1 then -- for the odd columns and it's going down
+             when col_direction = 1 and canvas_cn % 2 = 1 then -- for the odd columns and it's going down
                   case when 1=1 then 'TBD'
                        else 'TBD'                
                   end 
 
-             when col_direction = 1 and cn % 2 = 0 then -- for the even columns and it's going down
+             when col_direction = 1 and canvas_cn % 2 = 0 then -- for the even columns and it's going down
                   case when 1=1 then 'TBD'
                        else 'TBD'                
                   end 
@@ -702,7 +877,7 @@ from #bin_form
 
 
 
--- next is to check for each point, if it's overlapping with the finder pattern
+-- next is to check for each point, if it's overlapping with the finder pattecanvas_rn
 
 
 
