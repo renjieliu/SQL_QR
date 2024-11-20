@@ -66,8 +66,8 @@ option(maxrecursion 0)
 
 
 -- Here is the binary form of the string
-
 select res = string_agg(bin_form, '') within group(order by id) from #bin_form 
+
 
 
 

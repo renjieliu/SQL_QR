@@ -19,6 +19,7 @@
 
 
 --  select nchar('9632')
+rollback 
 
 drop table if exists #canvas 
 
@@ -53,7 +54,6 @@ select *
 into #canvas 
 from cte
 option (maxrecursion 0)
-
 
 
 
@@ -413,9 +413,11 @@ drop table if exists #canvas_staging
 
 select 
 loc
-, rn = (loc-1)/57
-, cn = (loc-1) %57
-, curr
+, rn = (loc-1) / @blocks
+, cn = (loc-1) % @blocks
+, cell = curr
+, total_blocks = @blocks
+, col_direction = cast(NULL as int)
 into #canvas_staging
 from #flat
 
@@ -425,39 +427,39 @@ update #canvas_staging set rn = rn +1, cn = cn + 1 -- row and col starts from 1
 
 -- PDP-1 lower line
 update #canvas_staging 
-set curr = 'r'
+set cell = 'r'
 where 
 rn = 9 
 and cn <= 9 
-and curr = '_'
+and cell = '_'
 -- and @version_num < 7
 
 
 -- PDP-1 upper right line
 update #canvas_staging 
-set curr = 'r'
+set cell = 'r'
 where 
 rn <= 9 
 and cn = 9 
-and curr = '_'
+and cell = '_'
 -- and @version_num < 7
 
 -- PDP-2 lower line
 update #canvas_staging 
-set curr = 'r'
+set cell = 'r'
 where 
 rn = 9 
 and cn >= @blocks - 7
-and curr = '_'
+and cell = '_'
 -- and @version_num < 7
 
 -- PDP-3 right line
 update #canvas_staging 
-set curr = 'r'
+set cell = 'r'
 where 
 rn >= @blocks - 7 
 and cn = 9
-and curr = '_'
+and cell = '_'
 -- and @version_num < 7
 
 
@@ -467,31 +469,146 @@ and curr = '_'
 
 -- PDP-2 left region
 update #canvas_staging 
-set curr = 'r'
+set cell = 'r'
 where 
 rn <= 6 
 and cn BETWEEN @blocks - 10 and 57 - 8 
-and curr = '_'
+and cell = '_'
 and @version_num >=7 
 
 -- PDP-3 upper region
 update #canvas_staging 
-set curr = 'r'
+set cell = 'r'
 where 
 rn between @blocks - 10 and 57 - 8 
 and cn <= 6 
-and curr = '_'
+and cell = '_'
 and @version_num >= 7
 
 
 --plot the dark module 
-update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where id = @blocks - 7
+update #canvas_staging set cell = 'D' where cn = 9 and rn = total_blocks - 7
 
 
 -- Next, to zigzag apply the data to the canvas 
 
 
+-- col_direction: 0 up, 1 down 
+-- column total will always be odd number, put column into col groups
+-- for the even groups, it's up, for the odd groups, it's down
+-- eg. col = 57, 57/2 = 28, even, it's up 
+-- col = 56, 56/2 = 28, even, it's up
+-- col = 55, 55/2 = 27, odd, it's down
+
+update #canvas_staging set col_direction = case when (cn / 2) %2 = 0 then 0 else 1 end
+
+
+drop table if exists #avail
+
+select loc, rn, cn, col_direction 
+into #avail 
+from #canvas_staging
+where cell = '_'
+
+
+select * from #avail 
+
+
+
+select 
+rn 
+, cell = STRING_AGG(cell, '') within group(order by rn, loc)
+from #canvas_staging
+group by rn 
+
+
+
+
+
+/* 
+declare @type_of_characters nvarchar = 3 --  1: number, 2: alphanum, 3: bytes, 4: Kanji
+declare @txt nvarchar(max) = 'ABCD'
+
+drop table if exists #base 
+
+select 
+c = convert(varchar(max), cast(@txt as varbinary(max)), 2 )
+into #base 
+
+drop table if exists #hex_bin_lkp
+
+; with cte as (
+SELECT h = '0', b = '0000' 
+UNION ALL
+
+ SELECT '1', '0001' UNION ALL
+
+ SELECT '2', '0010' UNION ALL
+
+ SELECT '3', '0011' UNION ALL
+
+ SELECT '4', '0100' UNION ALL 
+
+ SELECT '5', '0101' UNION ALL
+
+ SELECT '6', '0110' UNION ALL
+
+ SELECT '7', '0111' UNION ALL 
+
+ SELECT '8', '1000' UNION ALL
+
+ SELECT '9', '1001' UNION ALL
+
+ SELECT 'A', '1010' UNION ALL 
+
+ SELECT 'B', '1011' UNION ALL
+
+ SELECT 'C', '1100' UNION ALL
+
+ SELECT 'D', '1101' UNION ALL 
+
+ SELECT 'E', '1110' UNION ALL 
+
+ SELECT 'F', '1111'
+)
+select
+h = a.h + b.h + c.h + d.h 
+, b = a.b + b.b + c.b + d.b 
+into #hex_bin_lkp   
+from cte a, cte b, cte c, cte d
+
+
+drop table if exists #bin_form
+
+; with cte as 
+(
+    select id = 1, curr = substring(c, 3, 2) + left(c, 2), rem = right(c, len(c) - 4) from #base
+    union all 
+    select id + 1 , substring(rem, 3, 2) + left(rem, 2), rem =  right(rem, len(rem) - 4)   from cte 
+    where len(rem) > 0 
+)
+select id, curr, bin_form = cast(hb.b as varchar(max))
+into #bin_form
+from cte c inner join #hex_bin_lkp hb on c.curr = hb.h
+option(maxrecursion 0)
+
+
+
+
+-- Here is the binary form of the string
+select
+txt = string_agg(bin_form, '') within group(order by id) 
+from #bin_form 
+
+
+ */
+
+
+
+
 -- 1. type of the data, 4 bits
+
+
 
 
 
@@ -507,20 +624,6 @@ update #canvas set cell = left(cell, 8) + 'D' + right(cell, @blocks - 9) where i
 
 
 
-
-
-
-
-
-select 
-rn 
-, cell = STRING_AGG(curr, '') within group(order by rn, loc)
-from #canvas_staging
-group by rn 
-
-
-select * from #canvas_staging
-order by 1 
 
 
 
