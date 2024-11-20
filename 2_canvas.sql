@@ -630,7 +630,7 @@ and curr.canvas_cn %2 = 1 -- up and even col
 
 
 insert into #zigzag_nxt
-select distinct
+select  
 curr.*
 , zigzag_group = 'de' --down and even column
 , nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn, nxt3.canvas_rn, nxt4.canvas_rn) 
@@ -665,8 +665,10 @@ on (nxt4.canvas_rn < curr.canvas_rn and nxt4.canvas_cn < curr.canvas_cn)
 and not exists (select * from #avail nxt44
                  where nxt44.canvas_rn < curr.canvas_rn 
                     and nxt44.canvas_cn < curr.canvas_cn
-                    and nxt44.canvas_rn > nxt4.canvas_rn
-                    and nxt44.canvas_cn > nxt4.canvas_cn
+                    and (nxt44.canvas_rn > nxt4.canvas_rn
+                        or 
+                        nxt44.canvas_cn > nxt4.canvas_cn
+                        )
                 )
 
 where 
@@ -724,6 +726,33 @@ on zz.nxt_rn = nxt_loc.canvas_rn and zz.nxt_cn = nxt_loc.canvas_cn
 
 
 ---- Next is to get sequence number for the zigzag path
+
+drop table if exists #plot_order
+
+; with cte AS
+(
+    select plot_order = 1, currLoc = loc, nxt_loc from #canvas_zigzag_nxt 
+    where cell = '_' and loc = total_blocks*total_blocks -- starting point
+    union all
+    select plot_order + 1, c.nxt_loc, nxt.nxt_loc
+    from cte c inner join #canvas_zigzag_nxt nxt 
+    on c.nxt_loc = nxt.loc
+) 
+select * into #plot_order from cte
+OPTION(maxrecursion 0)
+
+
+drop table if exists #canvas_ready_to_plot 
+
+
+select 
+c.*
+, p.plot_order 
+into #canvas_ready_to_plot 
+from #canvas_zigzag_nxt c
+left outer join #plot_order p
+on c.loc = p.currLoc
+
 
 
 select * from #canvas_zigzag_nxt 
