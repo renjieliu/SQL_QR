@@ -511,7 +511,39 @@ from #canvas_staging
 where cell = '_'
 
 
-select * from #avail 
+/* 
+
+Steps for the Zigzag -  
+
+0. From right to left, flag each column direction
+
+1. For the columns going up
+
+1.1 Even numbered column - this is the turning zig
+ 
+ - Regular case, from all the available cells (row - 1, col + 1) or (row-1, col) 
+ 
+ - If not found, turn left, from the available cells (row, col - 1) -- this will take care of the Timing pattern as well.
+
+1.2 Odd numbered column
+ 
+ - Regular case - from all the available cells (row, col - 1) or (row-1, col)
+
+2. For the columns going down
+
+2.1 Even numbered column - this is the turning zig
+ 
+ - Regular case, from the available cells, (row + 1, col + 1) or (row + 1,  col)
+ 
+ - If not found, from all the available cells, turn left (row, col - 1)
+
+2.2 Odd numbered column
+ 
+ - Regular case, from all the available cells, (row, col - 1) or (row+1, col)
+
+*/
+
+
 
 
 
