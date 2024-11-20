@@ -24,7 +24,7 @@ rollback
 drop table if exists #canvas 
 
 
-declare @version_num int = 10
+declare @version_num int = 5
 
 drop table if exists #versions 
 
@@ -766,67 +766,9 @@ where canvas_rn = 57 and canvas_cn = 10
 
 ---- Next is to get the text into binary, and place on to the canvas
 
-
-
-
-
-
-
---select * from #canvas_zigzag_nxt
-
-
-
--- select * from #avail
--- where canvas_rn = 10 and canvas_cn = 8
-
-
-
-/* 
-select 
-canvas_rn 
-, cell = STRING_AGG(cell, '') within group(order by canvas_rn, loc)
-from #canvas_zigzag_nxt
-group by canvas_rn 
-
-*/
-
-
-
-
-
-/* 
-select
-loc
-, nxt = case when col_direction = 0 and canvas_cn % 2 = 1 then -- for the odd columns and it's going up
-                        case when exists(select * from #avail a2 where a2.loc = a1.loc - 1 ) then a1.loc - 1 -- use the left one
-                             else 'TBD'
-                        end 
-             when col_direction = 0 and canvas_cn % 2 = 0 then -- for the even columns and it's going up
-                  case when 1=1 then 'TBD'
-                       else 'TBD'                
-                  end 
-                     
-             when col_direction = 1 and canvas_cn % 2 = 1 then -- for the odd columns and it's going down
-                  case when 1=1 then 'TBD'
-                       else 'TBD'                
-                  end 
-
-             when col_direction = 1 and canvas_cn % 2 = 0 then -- for the even columns and it's going down
-                  case when 1=1 then 'TBD'
-                       else 'TBD'                
-                  end 
-        end 
-
-from #avail a1 order by 1 desc 
- */
-
-
-
-
-
-/* 
-declare @type_of_characters nvarchar = 3 --  1: number, 2: alphanum, 3: bytes, 4: Kanji
-declare @txt nvarchar(max) = 'ABCD'
+declare @txt nvarchar(max) = 'Today is 2024-11-20. It is a Wednesday. This is the text to show on the QR Code'
+declare @type_of_characters int = 3 --  1: number, 2: alphanum, 3: bytes, 4: Kanji
+declare @len int = len(@txt)
 
 drop table if exists #base 
 
@@ -877,7 +819,7 @@ into #hex_bin_lkp
 from cte a, cte b, cte c, cte d
 
 
-drop table if exists #bin_form
+drop table if exists #txt_bin_form -- turn to little endian
 
 ; with cte as 
 (
@@ -887,20 +829,126 @@ drop table if exists #bin_form
     where len(rem) > 0 
 )
 select id, curr, bin_form = cast(hb.b as varchar(max))
-into #bin_form
+into #txt_bin_form
 from cte c inner join #hex_bin_lkp hb on c.curr = hb.h
 option(maxrecursion 0)
 
 
+-- select * from #txt_bin_form 
+-- order by 1 
+
+-- select
+-- txt = string_agg(bin_form, '') within group(order by id) 
+-- from #txt_bin_form 
 
 
--- Here is the binary form of the string
+
+drop table if exists #plot_txt_bin
+
+
+select plot_txt = 
+(
+    select right(b, 4) -- convert the type to 4 bits 
+    from #hex_bin_lkp h
+    where h = right(convert(varchar(max), cast(@type_of_characters as varbinary(max)), 2 ), 4)
+)
++
+(
+    select right(b, 8) -- convert the len to 8 bits 
+    from #hex_bin_lkp h
+    where h = right(convert(varchar(max), cast(@len as varbinary(max)), 2 ), 4)
+)
++
+(
+    select -- concat the txt in ascii_bin_form 
+    txt = string_agg(bin_form, '') within group(order by id) 
+    from #txt_bin_form 
+)
+into #plot_txt_bin
+
+
+
+
+; with cte as 
+(
+
+    select 
+    id = 1
+    , curr = cast( left(plot_txt, 1) as varchar(max) )
+    , rem = cast( right(plot_txt, len(plot_txt) - 1)  as varchar(max)) 
+    from #plot_txt_bin
+    union all 
+    select 
+    id + 1
+    , left(rem, 1)
+    , rem = right(rem, len(rem) - 1)
+    from cte
+    where rem != ''
+)
+select id, curr from cte 
+order by 1 
+OPTION(maxrecursion 0)
+
+
+
+
+
+--------- Next is to generate the ECC --------- 
+
+
+
+--select * from #canvas_zigzag_nxt
+
+
+
+
+
+-- select * from #avail
+-- where canvas_rn = 10 and canvas_cn = 8
+
+
+
+/* 
+select 
+canvas_rn 
+, cell = STRING_AGG(cell, '') within group(order by canvas_rn, loc)
+from #canvas_zigzag_nxt
+group by canvas_rn 
+
+*/
+
+
+
+
+
+/* 
 select
-txt = string_agg(bin_form, '') within group(order by id) 
-from #bin_form 
+loc
+, nxt = case when col_direction = 0 and canvas_cn % 2 = 1 then -- for the odd columns and it's going up
+                        case when exists(select * from #avail a2 where a2.loc = a1.loc - 1 ) then a1.loc - 1 -- use the left one
+                             else 'TBD'
+                        end 
+             when col_direction = 0 and canvas_cn % 2 = 0 then -- for the even columns and it's going up
+                  case when 1=1 then 'TBD'
+                       else 'TBD'                
+                  end 
+                     
+             when col_direction = 1 and canvas_cn % 2 = 1 then -- for the odd columns and it's going down
+                  case when 1=1 then 'TBD'
+                       else 'TBD'                
+                  end 
 
+             when col_direction = 1 and canvas_cn % 2 = 0 then -- for the even columns and it's going down
+                  case when 1=1 then 'TBD'
+                       else 'TBD'                
+                  end 
+        end 
 
+from #avail a1 order by 1 desc 
  */
+
+
+
 
 
 
