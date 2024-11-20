@@ -527,6 +527,7 @@ Steps for the Zigzag -
  
  - If not found, from all the available cells, turn  left (row, col - 1)
 
+ - For the down column at (blocks, 10) location, need to jump to the left upper, the cell above the dark module.
 2.2 Odd numbered column
  
  - Regular case, from all the available cells, (row, col - 1) or (row+1, col)
@@ -555,10 +556,10 @@ from #canvas_staging
 where cell = '_'
 
 
+create index idx on #avail(canvas_rn, canvas_cn)
 
-drop table if exists #nxt
 
-
+drop table if exists #zigzag_nxt
 
 
 select 
@@ -566,7 +567,7 @@ curr.*
 , zigzag_group = 'ue' --up and even column
 , nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn, nxt3.canvas_rn) 
 , nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn, nxt3.canvas_cn) 
-into #nxt
+into #zigzag_nxt
 from #avail curr 
 left outer join #avail nxt1  -- normal zigzag, to find the nearest previous row 
 on (nxt1.canvas_rn < curr.canvas_rn and nxt1.canvas_cn = curr.canvas_cn + 1)
@@ -598,7 +599,7 @@ and curr.canvas_cn %2 = 0 -- up and even col
 -- and curr.canvas_rn = 10 and curr.canvas_cn = 8
 
 
-insert into #nxt
+insert into #zigzag_nxt
 select 
 curr.*
 , zigzag_group = 'uo' --up and odd column
@@ -628,12 +629,12 @@ and curr.canvas_cn %2 = 1 -- up and even col
 
 
 
-insert into #nxt
-select 
+insert into #zigzag_nxt
+select distinct
 curr.*
 , zigzag_group = 'de' --down and even column
-, nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn, nxt3.canvas_rn) 
-, nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn, nxt3.canvas_cn) 
+, nxt_rn = COALESCE(nxt1.canvas_rn, nxt2.canvas_rn, nxt3.canvas_rn, nxt4.canvas_rn) 
+, nxt_cn = COALESCE(nxt1.canvas_cn, nxt2.canvas_cn, nxt3.canvas_cn, nxt4.canvas_cn) 
 from #avail curr 
 left outer join #avail nxt1  -- normal zigzag, to find the nearest following row 
 on (nxt1.canvas_rn > curr.canvas_rn and nxt1.canvas_cn = curr.canvas_cn + 1)
@@ -659,6 +660,15 @@ and not exists (select * from #avail nxt33
                     and nxt33.canvas_cn > nxt3.canvas_cn
                 ) 
 
+left outer join #avail nxt4  -- nearest left upper cell
+on (nxt4.canvas_rn < curr.canvas_rn and nxt4.canvas_cn < curr.canvas_cn)
+and not exists (select * from #avail nxt44
+                 where nxt44.canvas_rn < curr.canvas_rn 
+                    and nxt44.canvas_cn < curr.canvas_cn
+                    and nxt44.canvas_rn > nxt4.canvas_rn
+                    and nxt44.canvas_cn > nxt4.canvas_cn
+                )
+
 where 
 curr.col_direction = 'd'
 and curr.canvas_cn %2 = 0 -- up and even col
@@ -666,7 +676,7 @@ and curr.canvas_cn %2 = 0 -- up and even col
 
 
 
-insert into #nxt
+insert into #zigzag_nxt
 select 
 curr.*
 , zigzag_group = 'do' --down and odd column
@@ -694,41 +704,62 @@ curr.col_direction = 'd'
 and curr.canvas_cn %2 = 1 -- up and even col
 -- and curr.canvas_rn = 10 and curr.canvas_cn = 8
 
-select * from #nxt 
+
+drop table if exists #canvas_zigzag_nxt
 
 
-drop table if exists #canvas_zigzag
 
 select 
 s.*
-, n.zigzag_group
-, n.nxt_rn
-, n.nxt_cn
-into #canvas_zigzag
-from #canvas_staging s left outer join #nxt n
-on s.loc = n.loc
+, zz.zigzag_group
+, zz.nxt_rn
+, zz.nxt_cn
+, nxt_loc = nxt_loc.loc -- the exact loc on the canvas
+into #canvas_zigzag_nxt
+from #canvas_staging s 
+left outer join #zigzag_nxt zz 
+on s.loc = zz.loc
+left outer join #canvas_staging nxt_loc
+on zz.nxt_rn = nxt_loc.canvas_rn and zz.nxt_cn = nxt_loc.canvas_cn
+
+
+---- Next is to get sequence number for the zigzag path
+
+
+select * from #canvas_zigzag_nxt 
+where cell = '_' and nxt_loc is null 
+
+select * from #canvas_zigzag_nxt 
+where canvas_rn = 57 and canvas_cn = 10
 
 
 
 
-select * from #canvas_zigzag
-
-
-
-select * from #avail
-where canvas_rn = 10 and canvas_cn = 8
+---- Next is to get the text into binary, and place on to the canvas
 
 
 
 
 
 
+
+--select * from #canvas_zigzag_nxt
+
+
+
+-- select * from #avail
+-- where canvas_rn = 10 and canvas_cn = 8
+
+
+
+/* 
 select 
 canvas_rn 
 , cell = STRING_AGG(cell, '') within group(order by canvas_rn, loc)
-from #canvas_zigzag
+from #canvas_zigzag_nxt
 group by canvas_rn 
 
+*/
 
 
 
