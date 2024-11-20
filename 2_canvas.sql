@@ -1,3 +1,14 @@
+-- this is the initial version - goal is to make the code work, and it can be scanned
+
+-- ================= Future =================
+-- * Check the text to determine if it's type 1, 2, 3 or 4
+-- * Check the text length to determine the version number 
+-- * Apply different mask 
+-- * Calculate the penalty score
+-- ==========================================
+
+
+
 -- using QR code version 2 as a starter, version 1 does not have any alignment pattecanvas_rn.
 -- this is to have 3 position detection pattecanvas_rns (PDP) on the cocanvas_rners
 -- PDP on the left upper is PDP-1, on the right upper is PDP-2, on the left lower is PDP-3
