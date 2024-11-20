@@ -2,10 +2,12 @@
 
 -- ================= Future =================
 -- * Check the text to determine if it's type 1, 2, 3 or 4
--- * Check the text length to determine the version number 
+-- * Check the text length to determine the version number -- https://www.thonky.com/qr-code-tutorial/character-capacities 
 -- * Apply different mask 
 -- * Calculate the penalty score
 -- ==========================================
+
+
 
 
 
