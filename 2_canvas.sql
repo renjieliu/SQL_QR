@@ -847,6 +847,7 @@ from cte c inner join #hex_bin_lkp hb on c.curr = hb.h
 option(maxrecursion 0)
 
 
+
 -- select * from #txt_bin_form 
 -- order by 1 
 
@@ -882,6 +883,75 @@ into #plot_txt_bin
 
 
 
+
+
+-- TODO - to import the error correction table from https://www.thonky.com/qr-code-tutorial/error-correction-table
+
+
+
+-- TODO - to import the version / type number of bits as below table
+/*
+Versions 1 through 9
+Numeric mode: 10 bits
+Alphanumeric mode: 9 bits
+Byte mode: 8 bits
+Japanese mode: 8 bits
+Versions 10 through 26
+Numeric mode: 12 bits
+Alphanumeric mode: 11 bits
+Byte mode: 16
+Japanese mode: 10 bits
+Versions 27 through 40
+Numeric mode: 14 bits
+Alphanumeric mode: 13 bits
+Byte mode: 16 bits
+Japanese mode: 12 bits
+*/ 
+
+
+-- TODO - To find the total length for the version + error correction level 
+
+
+
+-- TODO - adding terminator
+
+
+
+-- TODO - adding pad bytes 0 if the total length up to this point is not a multiple of 8
+
+
+
+-- TODO - adding padding -- EC 11 (236, 17) -- 11101100, 00010001
+
+
+
+
+-- TODO - to concatenate the terminator, paddings to the #plot_txt_bin.plot_text 
+
+
+
+-- TODO - generate ECC 
+
+-- In general, the values are always equal to 2 times the previous power, and if that value is 256 or greater, it is XORed with 285.
+
+
+
+
+
+
+-- TODO - merge ECC into #plot_txt_bin.plot_text
+
+
+
+
+
+
+
+
+
+
+--- Below is to generate the plot_path
+
 ; with cte as 
 (
 
@@ -902,15 +972,6 @@ select id, curr from cte
 order by 1 
 OPTION(maxrecursion 0)
 
-
-
-
-
-
-
-
-
---------- Next is to generate the ECC --------- 
 
 
 
