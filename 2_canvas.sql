@@ -909,6 +909,8 @@ Japanese mode: 12 bits
 */ 
 
 
+
+
 -- TODO - To find the total length for the version + error correction level 
 
 
