@@ -37,7 +37,7 @@ rollback
 drop table if exists #canvas 
 
 
-declare @version_num int = 5
+declare @version_num int = 10
 
 drop table if exists #versions 
 
@@ -52,8 +52,10 @@ from cte
 option(maxrecursion  0)
 
 
+
 declare @blocks int = (select cast(n as int) from #versions where v = @version_num) 
-declare @finder int = 7
+declare @finder int = 7  -- this is the blocks needed for the finder
+
 
 ; with cte as 
 
@@ -609,7 +611,7 @@ and not exists (select * from #avail nxt33
 where 
 curr.col_direction = 'u'
 and curr.canvas_cn %2 = 0 -- up and even col
--- and curr.canvas_rn = 10 and curr.canvas_cn = 8
+-- and curr.canvas_rn = 15 and curr.canvas_cn = 28
 
 
 insert into #zigzag_nxt
@@ -773,6 +775,13 @@ where cell = '_' and nxt_loc is null
 
 select * from #canvas_zigzag_nxt 
 where canvas_rn = 57 and canvas_cn = 10
+
+
+select loc, count(*) from #canvas_ready_to_plot
+group by loc 
+order by 2 desc 
+
+
 
 
 
@@ -959,7 +968,7 @@ select '27' ,'40' ,'4' ,'12'
  
 
 
-
+--- TODO - need to put all the variables to a table
 
 --select * from #version_mode_bits
 
@@ -1051,7 +1060,7 @@ group by canvas_rn
 */
 
 
-
+-- select * from #canvas 
 
 
 /* 
@@ -1152,5 +1161,3 @@ from #avail a1 order by 1 desc
 
 
 
-
- 
