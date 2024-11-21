@@ -940,7 +940,6 @@ Japanese mode: 12 bits
 
 
 
-
 -- TODO - merge ECC into #plot_txt_bin.plot_text
 
 
