@@ -23,6 +23,21 @@ select id = val, val = id into #gf_inv from #gf
 update #gf_inv set id = 0 where val = 0; 
 
 
+drop table if exists #generator 
+
+select n = 1 into #generator
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
