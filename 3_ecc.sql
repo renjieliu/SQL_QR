@@ -40,4 +40,3 @@ select n = 1 into #generator
 
 
 
-
