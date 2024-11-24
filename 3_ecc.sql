@@ -41,6 +41,9 @@ select ecc_length = 10 into #ecc_length
 
 
 
+
+
+
 ----------------------------------------------
 --Todo - how to compute ECC_length? 
 drop table if exists #data_poly
