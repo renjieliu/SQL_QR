@@ -32,6 +32,8 @@ select * from #generator
 
 drop table if exists #ecc_length 
 
+
+
 select ecc_length = 10 into #ecc_length
 
 
