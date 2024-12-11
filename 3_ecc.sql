@@ -44,8 +44,6 @@ select ecc_length = 10 into #ecc_length
 
 
 
-
-
 ----------------------------------------------
 --Todo - how to compute ECC_length? 
 drop table if exists #data_poly
@@ -81,4 +79,83 @@ select * from #data_poly
 
 
 
+go 
 
+----------------------------
+-- Below is the script to use CTE to mimic array[n] operation 
+-- It's like generating a table dynamically, and it can be referenced in the recursive part.
+
+-- To split the string, and generate the ordinal number, to mimic the array index
+-- Note - as my current SQL server version (15.0: SQL Server 2019) does not support enable_ordinal 
+-- The ROW_NUMBER wrapper can be removed with SQL server 2022, as enable_ordinal function is enabled starting from this version.
+
+create function u_split_string( 
+@input varchar(max)
+, @delimiter char(1)
+)
+returns table as return 
+with cte as (
+select 
+id = 1 
+, curr = left(@input, CHARINDEX(@delimiter, @input)-1)  
+, rem = right(@input, len(@input)-CHARINDEX(@delimiter, @input)) 
+where CHARINDEX (@delimiter, @input) != 0	
+union all 
+select id + 1, curr = left(rem, CHARINDEX(@delimiter, rem)-1), right(rem, len(rem)-CHARINDEX(@delimiter, rem)) from cte
+where CHARINDEX(@delimiter, rem) != 0 
+)
+select 
+id = ROW_NUMBER() over (order by id )
+, val 
+, rem 
+from (
+
+	select id, val = curr, rem from cte 
+	where curr != ''
+	union all 
+	select id+1, rem, '' from cte
+	where id = (select max(id) from cte)
+	and rem != ''
+	union all 
+	select id = -1
+	, @input
+	, ''
+	where CHARINDEX (@delimiter, @input) = 0 	
+) dummy_name  
+
+go 
+
+
+---Testing code
+
+-- below code is something like 
+/* 
+
+arr = [1]
+for i in range(10):
+    print(arr[i])
+    arr.append(i)
+
+*/ 
+
+
+; with cte as
+(
+	select n = 1
+		, curr = (select val from dbo.u_split_string('1', ',') where id = 1 )
+        , og = cast('1' as varchar(max))
+	union all 
+	select 
+	n+1
+	, curr = (select val from dbo.u_split_string(og + ',' + cast(n+1 as varchar(max)), ',') where id = n + 1  )
+	, og + ', ' + cast(n+1 as varchar(max))
+    from cte 
+	where n < 10 
+
+)
+select * from cte 
+
+ 
+
+
+----------------------------
