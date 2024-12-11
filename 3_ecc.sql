@@ -154,6 +154,14 @@ select * from cte
 
  
 
+-----------------TODO: Need to have a CTE to update the string, to mimic the update in the array -----------------
+
+
+
+
+
+
+
 
 ----------------------------
 
@@ -194,15 +202,17 @@ def generate_error_correction(data, ecc_length):
 	for r in range(ecc_length): --  iteration <= @ecc_length  
         p1 = generator -- curr root, string '1' 
         p2 =[1, gf256[r]]  -- a = 1, b = (select xx from gf where x = r)
-        
 		result = [0] * (len(p1) + len(p2) - 1) --  have a string, replicate('0', (len(p1) + len(p2) - 1) )
         
-		for i, coef1 in enumerate(p1):
-            for j, coef2 in enumerate(p2):
-                result[i + j] ^= coef1 * coef2
+        for i in range(len(p1)): # this needs to be a table, with 2 columns, col1 - 1 to len(p1), col2 - 1 to len(p2)
+            for j in range(len(p2)):
+                result[i + j] ^= p1[i] * p2[j] # the result will be updatin the string in corresponding location
         
-        generator = result
+        generator = result --update the root to current result, which is the string after updating 
     
+
+
+
     for i, g in enumerate(generator):
         print(i, g)
     
