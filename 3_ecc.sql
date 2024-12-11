@@ -154,10 +154,35 @@ select * from cte
 
  
 
------------------TODO: Need to have a CTE to update the string, to mimic the update in the array -----------------
+-----------------Need to have a CTE to update the string, to mimic the update in the array -----------------
+
+go 
+
+create or alter function u_replace_nth_in_string(
+    @input varchar(max)
+    , @n int = 1 
+    , @newString varchar(max) = ''
+)
+returns table as return 
+
+select  val = STRING_AGG(val, ',') within group(order by id)
+from (
+        select id, val from dbo.u_split_string(@input, ',')
+        where id != @n
+        union all
+        select @n, @newString from dbo.u_split_string(@input, ',') 
+        where id = @n
+    ) _ 
+go
+
+
+select * from u_replace_nth_in_string(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
+                                    ,  60 -- position to be replaced
+                                    , '2') 
 
 
 
+go
 
 
 

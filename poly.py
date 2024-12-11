@@ -67,3 +67,8 @@ ecc = generate_error_correction(data, ecc_length)
 print("错误纠正码：", ecc)
 
 
+
+arr = [0] * 10
+for i in range(10):
+    arr[i] = i
+print(arr)
