@@ -90,19 +90,19 @@ go
 -- The ROW_NUMBER wrapper can be removed with SQL server 2022, as enable_ordinal function is enabled starting from this version.
 
 create function u_split_string( 
-@input varchar(max)
-, @delimiter char(1)
+	@input varchar(max)
+	, @delimiter char(1)
 )
 returns table as return 
 with cte as (
-select 
-id = 1 
-, curr = left(@input, CHARINDEX(@delimiter, @input)-1)  
-, rem = right(@input, len(@input)-CHARINDEX(@delimiter, @input)) 
-where CHARINDEX (@delimiter, @input) != 0	
-union all 
-select id + 1, curr = left(rem, CHARINDEX(@delimiter, rem)-1), right(rem, len(rem)-CHARINDEX(@delimiter, rem)) from cte
-where CHARINDEX(@delimiter, rem) != 0 
+	select 
+	id = 1 
+	, curr = left(@input, CHARINDEX(@delimiter, @input)-1)  
+	, rem = right(@input, len(@input)-CHARINDEX(@delimiter, @input)) 
+	where CHARINDEX (@delimiter, @input) != 0	
+	union all 
+	select id + 1, curr = left(rem, CHARINDEX(@delimiter, rem)-1), right(rem, len(rem)-CHARINDEX(@delimiter, rem)) from cte
+	where CHARINDEX(@delimiter, rem) != 0 
 )
 select 
 id = ROW_NUMBER() over (order by id )
@@ -113,13 +113,10 @@ from (
 	select id, val = curr, rem from cte 
 	where curr != ''
 	union all 
-	select id+1, rem, '' from cte
-	where id = (select max(id) from cte)
-	and rem != ''
+	select id+1, val = rem, rem ='' from cte -- put the last part back
+	where id = (select max(id) from cte) and rem != ''
 	union all 
-	select id = -1
-	, @input
-	, ''
+	select id = -1, @input, '' -- in case the string does not contain the delimiter at all
 	where CHARINDEX (@delimiter, @input) = 0 	
 ) dummy_name  
 
