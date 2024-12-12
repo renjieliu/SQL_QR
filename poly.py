@@ -17,7 +17,7 @@ def generate_error_correction(data, ecc_length):
     for i, val in enumerate(gf256):
         gf256_inv[val] = i
 
-
+    print ('gf256', gf256)
 
     # 创建 Reed-Solomon 生成多项式
     
@@ -32,12 +32,18 @@ def generate_error_correction(data, ecc_length):
         
         generator = result
     
-    for i, g in enumerate(generator):
-        print(i, g)
+    print('Step 1 Result - ')
+    print('Generator: ', generator)
     
+
+##########################################################################################
+
+    print('Step 2 Result - ')
     # 将数据转化为多项式
     data_poly = [ord(c) for c in data] + [0] * ecc_length # done
     print(data_poly)
+
+
 
     # 利用生成多项式计算余数（即错误校正码）
     for i in range(len(data)):
@@ -64,6 +70,8 @@ data = "HELLO WORLD"  # 输入文本
 ecc_length = 10  # 错误纠正码长度
 
 ecc = generate_error_correction(data, ecc_length)
+
+print('Final Result - ')
 print("错误纠正码：", ecc)
 
 

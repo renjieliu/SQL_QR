@@ -23,16 +23,7 @@ select id = val, val = id into #gf_inv from #gf
 update #gf_inv set id = 0 where val = 0; 
 
 
-drop table if exists #generator 
-
-select n = 1 into #generator
-
-
-select * from #generator
-
 drop table if exists #ecc_length 
-
-
 
 select ecc_length = 10 into #ecc_length
 
@@ -176,15 +167,32 @@ from (
 go
 
 
+
 select * from u_replace(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
                                     , 2 -- position to be replaced
                                     , '20') 
 
 
 
+go 
 
 
+create or alter function u_count_string ( -- this is to count how many times the @find string appear in the @input
+    @input varchar(max)
+    , @find varchar(max)
+)
+returns int
+as
+begin
+
+return (select len(@input) - len(replace(@input, @find, '')))
+
+end 
 go
+
+
+select dbo.u_count_string('hello', 'l')
+
 
 
 
@@ -203,12 +211,33 @@ go
 --     generator = result --update the root to current result, which is the string after updating 
 
 
+select * from #gf
+
+drop table if exists #gf256_string 
+
+select gf256 = STRING_AGG(cast(val as varchar), ',') within group(order by id) 
+into #gf256_string 
+from #gf 
+
+select * from #gf 
+
+-- assuming the r = ecc_length = 10 
+
 ; with cte as 
-(select n = 0, generator = cast('1' as varchar(max)), p2 = cast('1,' as varchar(max))
+(select 
+    r = 1
+    , generator = cast('1' as varchar(max)) 
+    , p2 = cast('1,' as varchar(max)) + (select cast(val as varchar) from #gf where id = 1 )
+    , res = REPLICATE('0,', 1 + 2 - 1 )  -- initially, [0] * (len(p1) + len(p2) - 1 
+ 
  union all 
- select n = n + 1, p1 = generator , p2 =p2+ '' --  + (select * from gf where n = id ) 
+ select 
+    r = r + 1
+    , p1 = generator
+    , p2 = p2 + '' --  + (select * from gf where n = id ) 
+    , res = null -- ```  this needs to be changed
   from cte 
-where n <= 10 
+where r <= 10 
 )
 select * from cte 
 
