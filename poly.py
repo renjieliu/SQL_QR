@@ -36,7 +36,9 @@ def generate_error_correction(data, ecc_length):
         for i in range(len(p1)):
             for j in range(len(p2)):
                 result[i + j] ^= p1[i] * p2[j]
-        
+        print('p1:', p1)
+        print('p2:', p2)
+
         generator = result
     
     print('Step 1 Result - ')

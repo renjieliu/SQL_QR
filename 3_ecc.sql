@@ -284,7 +284,7 @@ go
 -- end
 
 go 
-commit
+
 
 ; with cte as 
 (
@@ -312,13 +312,13 @@ select
             (select rn = row_number() over (order by (select null)), j from #iteration where iterationID = iter + 1 )_ 
           where rn = 1)as varchar(max))
     , p1 = cast( res as varchar(max))
-    , p2 = cast (p2  
+    , p2 = NULL /* cast (p2  
                  + (select val 
                     from #gf 
                     where id = -1 + ( select r from (select rn = row_number() over (order by (select null)),   r = iterationGroup from #iteration where iterationID = iter + 1 )_  where rn = 1 )
                    )  
-                 as varchar(max))
-    , res = dbo.u_replace(res
+                 as varchar(max)) */
+    , res = NULL /* dbo.u_replace(res
                             , 
                             i+j 
                             , 
@@ -331,16 +331,16 @@ select
                                 (select cast(val as bigint) from dbo.u_split_string(p2, ',') where id = j)
                             )
                             as varchar(max))
-                        )
+                        ) */
 from cte 
 where iter < ( select r from  (select rn = row_number() over (order by iterationID desc), r = iterationID from #iteration) _ where rn = 1 )
 )
 select * from cte 
-
+option (maxrecursion 100000)
 go 
 
 
-select * from dbo.u_replace('0,0,0', 2, '1')
+--  select * from dbo.u_replace('0,0,0', 2, '1')
 
 
 select rtrim(ltrim(str(123))) 
