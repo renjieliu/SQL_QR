@@ -204,12 +204,11 @@ go
 
 
 ; with cte as 
-(select id = 0, generator =  '1'
+(select n = 0, generator = cast('1' as varchar(max)), p2 = cast('1,' as varchar(max))
  union all 
- select p1 = generator, p2 = '1,' --  + (select * from gf where n = id ) 
- 
- from cte 
-
+ select n = n + 1, p1 = generator , p2 =p2+ '' --  + (select * from gf where n = id ) 
+  from cte 
+where n <= 10 
 )
 select * from cte 
 
