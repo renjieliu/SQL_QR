@@ -89,7 +89,7 @@ go
 -- Note - as my current SQL server version (15.0: SQL Server 2019) does not support enable_ordinal 
 -- The ROW_NUMBER wrapper can be removed with SQL server 2022, as enable_ordinal function is enabled starting from this version.
 
-create function u_split_string( 
+create or alter function u_split_string( 
 	@input varchar(max)
 	, @delimiter char(1)
 )
@@ -158,7 +158,7 @@ select * from cte
 
 go 
 
-create or alter function u_replace_nth_in_string(
+create or alter function u_replace(
     @input varchar(max)
     , @n int = 1 
     , @newString varchar(max) = ''
@@ -176,9 +176,11 @@ from (
 go
 
 
-select * from u_replace_nth_in_string(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
-                                    ,  60 -- position to be replaced
-                                    , '2') 
+select * from u_replace(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
+                                    , 2 -- position to be replaced
+                                    , '20') 
+
+
 
 
 
