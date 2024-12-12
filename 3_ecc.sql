@@ -189,6 +189,31 @@ go
 
 
 
+-- generator = [1] -- in sql, this is string '1'
+
+-- for r in range(ecc_length): --  iteration <= @ecc_length  
+--     p1 = generator -- curr root, string '1' 
+--     p2 =[1, gf256[r]]  -- a = 1, b = (select xx from gf where x = r)
+--     result = [0] * (len(p1) + len(p2) - 1) --  have a string, replicate('0', (len(p1) + len(p2) - 1) )
+    
+--     for i in range(len(p1)): # this needs to be a table, with 2 columns, col1 - 1 to len(p1), col2 - 1 to len(p2)
+--         for j in range(len(p2)):
+--             result[i + j] ^= p1[i] * p2[j] # the result will be updatin the string in corresponding location
+    
+--     generator = result --update the root to current result, which is the string after updating 
+
+
+; with cte as 
+(select id = 0, generator =  '1'
+ union all 
+ select p1 = generator, p2 = '1,' --  + (select * from gf where n = id ) 
+ 
+ from cte 
+
+)
+select * from cte 
+
+
 
 ----------------------------
 
