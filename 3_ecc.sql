@@ -154,23 +154,30 @@ create or alter function u_replace(
     , @n int = 1 
     , @newString varchar(max) = ''
 )
-returns table as return 
+returns varchar(max)
+as 
+begin 
+  return 
+    (
+        select val = STRING_AGG(val, ',') within group(order by id)
+        from (
+                select id, val from dbo.u_split_string(@input, ',')
+                where id != @n
+                union all
+                select @n, @newString from dbo.u_split_string(@input, ',') 
+                where id = @n
+            ) _
+    )
 
-select  val = STRING_AGG(val, ',') within group(order by id)
-from (
-        select id, val from dbo.u_split_string(@input, ',')
-        where id != @n
-        union all
-        select @n, @newString from dbo.u_split_string(@input, ',') 
-        where id = @n
-    ) _ 
+end  
 go
 
 
 
-select * from u_replace(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
+select dbo.u_replace(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
                                     , 2 -- position to be replaced
                                     , '20') 
+
 
 
 
@@ -191,10 +198,46 @@ end
 go
 
 
+
+
+create or alter function u_array_count ( -- this is to count how many substrings are being included in the string, separated by ,
+    @input varchar(max)
+    , @delimiter varchar(max)
+)
+returns int
+as
+begin
+
+return 1+(select len(@input) - len(replace(@input, @delimiter, '')))
+
+end 
+go
+
+
+
 select dbo.u_count_string('hello', 'l')
 
+select dbo.u_array_count('a, b, c ', ',')
 
+drop table if exists #iteration
 
+-- this is to mimic the process the double for loop
+; with n as 
+(select iter = 1  union all  select iter+1 from n where iter < 10)  -- 10 is the ecc_length
+, p1  as 
+(
+    select iter, counting = 1  from n 
+    union all 
+    select iter, counting+ 1 from p1 
+    where counting < iter
+) 
+select
+iterationID = ROW_NUMBER()over(order by p1.iter, p1.counting, p2.iter)
+, iterationGroup = p1.iter
+, i = p1.counting 
+, j = p2.iter 
+into #iteration 
+from p1, (values (1), (2)) p2(iter) 
 
 
 -- generator = [1] -- in sql, this is string '1'
@@ -211,7 +254,7 @@ select dbo.u_count_string('hello', 'l')
 --     generator = result --update the root to current result, which is the string after updating 
 
 
-select * from #gf
+-- select * from #gf
 
 drop table if exists #gf256_string 
 
@@ -219,29 +262,90 @@ select gf256 = STRING_AGG(cast(val as varchar), ',') within group(order by id)
 into #gf256_string 
 from #gf 
 
-select * from #gf 
 
--- assuming the r = ecc_length = 10 
+
+go 
+
+
+
+-- below function is to solve the error Msg 467, Level 16, State 1, Line 2
+-- GROUP BY, HAVING, or aggregate functions are not allowed in the recursive part of a recursive common table expression 'cte'.
+
+-- create or alter function u_get_i_j_from_iteration  
+-- (
+--     @i_j varchar(max)
+--     ,@iterationID int
+-- )
+-- returns int 
+-- as 
+-- begin 
+-- return (select case when @i_j = 'i' then i else j end 
+--        from #iteration where iteration = @iterationID  )
+-- end
+
+go 
+commit
 
 ; with cte as 
-(select 
-    r = 1
-    , generator = cast('1' as varchar(max)) 
+(
+    select 
+    iter = 1
+    , r = cast((select distinct iterationGroup from #iteration where iterationID = 1) as varchar(max))
+    , i = cast((select distinct i from #iteration where iterationID = 1) as varchar(max))
+    , j = cast((select distinct j from #iteration where iterationID = 1) as varchar(max))
+    
+    , p1 = cast('1' as varchar(max)) -- this is the generator
     , p2 = cast('1,' as varchar(max)) + (select cast(val as varchar) from #gf where id = 1 )
-    , res = REPLICATE('0,', 1 + 2 - 1 )  -- initially, [0] * (len(p1) + len(p2) - 1 
+    , res = cast ('0,0' as varchar(max)) -- initially, [0] * (len(p1) + len(p2) - 1)
  
- union all 
- select 
-    r = r + 1
-    , p1 = generator
-    , p2 = p2 + '' --  + (select * from gf where n = id ) 
-    , res = null -- ```  this needs to be changed
-  from cte 
-where r <= 10 
+union all 
+ -- result[i + j] ^= p1[i] * p2[j]
+select 
+    iter + 1
+    , r = cast( (select r from 
+            (select rn = row_number() over (order by (select null)), r = iterationGroup from #iteration where iterationID = iter + 1 )_ 
+          where rn = 1) as varchar(max))
+    , i = cast( (select i from 
+            (select rn = row_number() over (order by (select null)), i from #iteration where iterationID = iter + 1 )_ 
+          where rn = 1)as varchar(max))
+    , j =  cast((select j from 
+            (select rn = row_number() over (order by (select null)), j from #iteration where iterationID = iter + 1 )_ 
+          where rn = 1)as varchar(max))
+    , p1 = cast( res as varchar(max))
+    , p2 = cast (p2  
+                 + (select val 
+                    from #gf 
+                    where id = -1 + ( select r from (select rn = row_number() over (order by (select null)),   r = iterationGroup from #iteration where iterationID = iter + 1 )_  where rn = 1 )
+                   )  
+                 as varchar(max))
+    , res = dbo.u_replace(res
+                            , 
+                            i+j 
+                            , 
+                            cast
+                            ( (select cast(val as bigint) from dbo.u_split_string(res, ',') where id = i+j)
+                            ^
+                            (   
+                                (select cast(val as bigint) from dbo.u_split_string(p1, ',') where id = i)
+                                *
+                                (select cast(val as bigint) from dbo.u_split_string(p2, ',') where id = j)
+                            )
+                            as varchar(max))
+                        )
+from cte 
+where iter < ( select r from  (select rn = row_number() over (order by iterationID desc), r = iterationID from #iteration) _ where rn = 1 )
 )
 select * from cte 
 
+go 
 
+
+select * from dbo.u_replace('0,0,0', 2, '1')
+
+
+select rtrim(ltrim(str(123))) 
+
+select  * from #iteration
 
 ----------------------------
 

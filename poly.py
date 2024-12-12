@@ -26,9 +26,16 @@ def generate_error_correction(data, ecc_length):
         p1 = generator # p1 = 
         p2 =[1, gf256[r]]  # a = 1, b = (select xx from gf where x = r)
         result = [0] * (len(p1) + len(p2) - 1)
-        for i, coef1 in enumerate(p1):
-            for j, coef2 in enumerate(p2):
-                result[i + j] ^= coef1 * coef2
+    
+        
+        print(f"length of p1: {len(p1)}") 
+        print(f"length of p2: {len(p2)}") 
+        print(f"length of result: {len(result)}") 
+        
+        
+        for i in range(len(p1)):
+            for j in range(len(p2)):
+                result[i + j] ^= p1[i] * p2[j]
         
         generator = result
     
