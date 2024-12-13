@@ -30,11 +30,6 @@ select ecc_length = 10 into #ecc_length
 
 
 
-
-
-
-
-
 ----------------------------------------------
 --Todo - how to compute ECC_length? 
 drop table if exists #data_poly
@@ -66,7 +61,7 @@ select '21' , '0'
 
 
 
-select * from #data_poly 
+-- select * from #data_poly 
 
 
 
@@ -127,21 +122,21 @@ for i in range(10):
 */ 
 
 
-; with cte as
-(
-	select n = 1
-		, curr = (select val from dbo.u_split_string('1', ',') where id = 1 )
-        , og = cast('1' as varchar(max))
-	union all 
-	select 
-	n+1
-	, curr = (select val from dbo.u_split_string(og + ',' + cast(n+1 as varchar(max)), ',') where id = n + 1  )
-	, og + ', ' + cast(n+1 as varchar(max))
-    from cte 
-	where n < 10 
+-- ; with cte as
+-- (
+-- 	select n = 1
+-- 		, curr = (select val from dbo.u_split_string('1', ',') where id = 1 )
+--         , og = cast('1' as varchar(max))
+-- 	union all 
+-- 	select 
+-- 	n+1
+-- 	, curr = (select val from dbo.u_split_string(og + ',' + cast(n+1 as varchar(max)), ',') where id = n + 1  )
+-- 	, og + ', ' + cast(n+1 as varchar(max))
+--     from cte 
+-- 	where n < 10 
 
-)
-select * from cte 
+-- )
+-- select * from cte 
 
  
 
@@ -174,9 +169,9 @@ go
 
 
 
-select dbo.u_replace(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
-                                    , 2 -- position to be replaced
-                                    , '20') 
+-- select dbo.u_replace(left(REPLICATE('0,', 100), len(REPLICATE('0,', 100))-1)
+--                                     , 2 -- position to be replaced
+--                                     , '20') 
 
 
 
@@ -215,9 +210,9 @@ go
 
 
 
-select dbo.u_count_string('hello', 'l')
+-- select dbo.u_count_string('hello', 'l')
 
-select dbo.u_array_count('a, b, c ', ',')
+-- select dbo.u_array_count('a, b, c ', ',')
 
 drop table if exists #iteration
 
@@ -240,21 +235,6 @@ into #iteration
 from p1, (values (1), (2)) p2(iter) 
 
 
--- generator = [1] -- in sql, this is string '1'
-
--- for r in range(ecc_length): --  iteration <= @ecc_length  
---     p1 = generator -- curr root, string '1' 
---     p2 =[1, gf256[r]]  -- a = 1, b = (select xx from gf where x = r)
---     result = [0] * (len(p1) + len(p2) - 1) --  have a string, replicate('0', (len(p1) + len(p2) - 1) )
-    
---     for i in range(len(p1)): # this needs to be a table, with 2 columns, col1 - 1 to len(p1), col2 - 1 to len(p2)
---         for j in range(len(p2)):
---             result[i + j] ^= p1[i] * p2[j] # the result will be updatin the string in corresponding location
-    
---     generator = result --update the root to current result, which is the string after updating 
-
-
--- select * from #gf
 
 drop table if exists #gf256_string 
 
@@ -283,7 +263,66 @@ go
 --        from #iteration where iteration = @iterationID  )
 -- end
 
+-- Below function is to take in a string, split it by @delimiter, and read the @nth part 
+
+
+-- select * from dbo.u_split_string('Hello , you', ',')
+
 go 
+
+-- create or alter function u_get_n_part(
+--     @input varchar(max)
+--     , @delimiter varchar(max)
+--     , @nth int
+-- )
+-- returns varchar(max)
+-- begin 
+
+-- return
+
+-- (
+--     select distinct val from dbo.u_split_string(@input, @delimiter) 
+--     where id = @nth
+-- )
+
+
+-- end
+
+go 
+
+
+
+select * from #iteration
+
+-- select STRING_AGG(i, ',') within group(order by iterationID) from #iteration
+
+
+go 
+
+
+
+-- generator = [1] -- in sql, this is string '1'
+
+-- for r in range(ecc_length): --  iteration <= @ecc_length  
+--     p1 = generator -- curr root, string '1' 
+--     p2 =[1, gf256[r]]  -- a = 1, b = (select xx from gf where x = r)
+--     result = [0] * (len(p1) + len(p2) - 1) --  have a string, replicate('0', (len(p1) + len(p2) - 1) )
+    
+--     for i in range(len(p1)): # this needs to be a table, with 2 columns, col1 - 1 to len(p1), col2 - 1 to len(p2)
+--         for j in range(len(p2)):
+--             result[i + j] ^= p1[i] * p2[j] # the result will be updatin the string in corresponding location
+    
+--     generator = result --update the root to current result, which is the string after updating 
+
+
+-- select * from #gf
+
+
+
+
+drop table if exists #flatten_iteration
+
+
 
 
 ; with cte as 
@@ -302,28 +341,27 @@ union all
  -- result[i + j] ^= p1[i] * p2[j]
 select 
     iter + 1
-    , r = cast( (select r from 
-            (select rn = row_number() over (order by (select null)), r = iterationGroup from #iteration where iterationID = iter + 1 )_ 
-          where rn = 1) as varchar(max))
-    , i = cast( (select i from 
-            (select rn = row_number() over (order by (select null)), i from #iteration where iterationID = iter + 1 )_ 
-          where rn = 1)as varchar(max))
-    , j =  cast((select j from 
-            (select rn = row_number() over (order by (select null)), j from #iteration where iterationID = iter + 1 )_ 
-          where rn = 1)as varchar(max))
+    , r =  cast((select iterationGroup from #iteration where iterationID = iter + 1) as varchar(max))
+
+    , i =  cast((select i from #iteration where iterationID = iter + 1) as varchar(max))
+
+    , j =  cast((select j from #iteration where iterationID = iter + 1) as varchar(max))
+ 
     , p1 = cast( res as varchar(max))
-    , p2 = NULL /* cast (p2  
-                 + (select val 
+    , p2 = cast ('1, '  
+                 + (select cast(val as varchar)
                     from #gf 
-                    where id = -1 + ( select r from (select rn = row_number() over (order by (select null)),   r = iterationGroup from #iteration where iterationID = iter + 1 )_  where rn = 1 )
-                   )  
-                 as varchar(max)) */
-    , res = NULL /* dbo.u_replace(res
+                    where id = -1 + ( select iterationGroup from #iteration where iterationID = iter + 1)
+                   )
+                 as varchar(max))
+    
+    , res = dbo.u_replace(res
                             , 
                             i+j 
                             , 
                             cast
-                            ( (select cast(val as bigint) from dbo.u_split_string(res, ',') where id = i+j)
+                            ( 
+                            (select cast(val as bigint) from dbo.u_split_string(res, ',') where id = i+j)
                             ^
                             (   
                                 (select cast(val as bigint) from dbo.u_split_string(p1, ',') where id = i)
@@ -331,12 +369,12 @@ select
                                 (select cast(val as bigint) from dbo.u_split_string(p2, ',') where id = j)
                             )
                             as varchar(max))
-                        ) */
+                        )
 from cte 
 where iter < ( select r from  (select rn = row_number() over (order by iterationID desc), r = iterationID from #iteration) _ where rn = 1 )
 )
 select * from cte 
-option (maxrecursion 100000)
+option (maxrecursion 1000)
 go 
 
 
