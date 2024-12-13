@@ -332,7 +332,7 @@ drop table if exists #flatten_iteration
     , r = cast((select distinct iterationGroup from #iteration where iterationID = 1) as varchar(max))
     , i = cast((select distinct i from #iteration where iterationID = 1) as varchar(max))
     , j = cast((select distinct j from #iteration where iterationID = 1) as varchar(max))
-    
+
     , p1 = cast('1' as varchar(max)) -- this is the generator
     , p2 = cast('1,' as varchar(max)) + (select cast(val as varchar) from #gf where id = 1 )
     , res = cast ('0,0' as varchar(max)) -- initially, [0] * (len(p1) + len(p2) - 1)
@@ -354,7 +354,7 @@ select
                     where id = -1 + ( select iterationGroup from #iteration where iterationID = iter + 1)
                    )
                  as varchar(max))
-    
+
     , res = dbo.u_replace(res
                             , 
                             i+j 
