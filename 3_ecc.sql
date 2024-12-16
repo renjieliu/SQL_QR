@@ -318,7 +318,7 @@ go
 -- select * from #gf
 
 
-
+-- need to think about how to have the define the new variable and calculate the values in the same loop
 
 drop table if exists #flatten_iteration
 
